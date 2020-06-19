@@ -1,5 +1,4 @@
-# vines
-**VINES** stands for **V**olume **IN**tegral **E**quation **S**olver. 
+# **V**olume **IN**tegral **E**quation **S**olver (**VINES**) 
 
 VINES is a suite of Python codes for solving volume integral equation formulations of acoustic and electromagnetic scattering problems.
 
@@ -12,7 +11,7 @@ The particular scattering scenarios considered when developing this suite are th
 * Acoustic scattering by simple shapes (2D) and (3D)
 * High-intensity focused ultrasound in the body
 
-# Bibliography
+## Bibliography
 This work is partially discussed in the following publications:
 * Alexandra Tambova, Samuel P Groth, Jacob K White, Athanasios G Polimeridis, *Adiabatic absorbers in photonics simulations with the volume integral equation method*, Journal of Lightwave Technology (2018)
 * Samuel P Groth, Athanasios G Polimeridis, Alexandra Tambova, Jacob K White, *Circulant preconditioning in the volume integral equation method for silicon photonics*, JOSA A (2019)
