@@ -13,14 +13,14 @@ The particular scattering scenarios considered when developing this suite are th
 
 ## Bibliography
 This work is partially discussed in the following publications:
-* *Adiabatic absorbers in photonics simulations with the volume integral equation method*<br>
+* [**Adiabatic absorbers in photonics simulations with the volume integral equation method**](https://ieeexplore.ieee.org/abstract/document/8369129)<br>
 Alexandra Tambova, Samuel P Groth, Jacob K White, Athanasios G Polimeridis<br>
-Journal of Lightwave Technology, 2018
-* *Circulant preconditioning in the volume integral equation method for silicon photonics*<br>
+*Journal of Lightwave Technology*, 2018
+* [**Circulant preconditioning in the volume integral equation method for silicon photonics**](https://www.osapublishing.org/abstract.cfm?uri=josaa-36-6-1079)<br>
 Samuel P Groth, Athanasios G Polimeridis, Alexandra Tambova, Jacob K White<br>
-Journal of the Optical Society of America A, 2019
-* *Accelerating the discrete dipole approximation via circulant preconditioning*<br>
+*Journal of the Optical Society of America A*, 2019
+* [**Accelerating the discrete dipole approximation via circulant preconditioning**](https://www.sciencedirect.com/science/article/pii/S0022407319302080)<br>
 Samuel P Groth, Athanasios G Polimeridis, Jacob K White<br>
-Journal of Quantitative Spectroscopy and Radiative Transfer, 2020
+*Journal of Quantitative Spectroscopy and Radiative Transfer*, 2020
 
 
