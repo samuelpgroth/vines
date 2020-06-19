@@ -1,45 +1,44 @@
+
+from numba import njit, prange
+import numpy as np
+
+
 def generatedomain(res, dx, dy, dz):
-    import numpy as np
     # Get minimum number of voxels in each direction
     nx = np.int(np.max((1.0, np.round(dx / res))))
     ny = np.int(np.max((1.0, np.round(dy / res))))
     nz = np.int(np.max((1.0, np.round(dz / res))))
 
-    # commment
-    
     Dx = nx * res
     Dy = ny * res
     Dz = nz * res
-    
+
     x = np.arange(0.0, Dx, res) + (-Dx / 2 + res/2)
     y = np.arange(0.0, Dy, res) + (-Dy / 2 + res/2)
     z = np.arange(0.0, Dz, res) + (-Dz / 2 + res/2)
-    
-    r, L, M, N = grid3d(x, y, z)
 
+    r, L, M, N = grid3d(x, y, z)
     return r, L, M, N
 
 
-from numba import jit, njit, prange
-import numpy as np
 @njit(parallel=True)
 def grid3d(x, y, z):
     # define the dimensions
     L = x.shape[0]
     M = y.shape[0]
     N = z.shape[0]
-    
+
     # allocate space
-    r = np.zeros((L,M,N,3))
-    
+    r = np.zeros((L, M, N, 3))
+
     for ix in prange(0, L):
         xx = x[ix]
         for iy in range(0, M):
             yy = y[iy]
             for iz in range(0, N):
                 zz = z[iz]
-                r[ix,iy,iz,:] = np.array((xx,yy,zz))
-   
+                r[ix, iy, iz, :] = np.array((xx, yy, zz))
+
     return r, L, M, N
 
 
@@ -54,7 +53,6 @@ def koch_snowflake(order, scale=1):
     scale : float
         The extent of the snowflake (edge length of the base triangle).
     """
-    import numpy as np
     def _koch_snowflake_complex(order):
         if order == 0:
             # initial triangle
@@ -77,13 +75,14 @@ def koch_snowflake(order, scale=1):
 
     points = _koch_snowflake_complex(order)
     x, y = points.real, points.imag
-    
+
     # Stick coordinates into an array (useful for contains_points function)
     P = np.zeros((x.shape[0], 2), dtype=np.float64)
     P[:, 0] = x
     P[:, 1] = y
-   
+
     return x, y, P
+
 
 def shape(geom, refInd, sizeParam, nPerLam, aspectRatio):
     import numpy as np
@@ -118,12 +117,11 @@ def shape(geom, refInd, sizeParam, nPerLam, aspectRatio):
         dom_z = dom_x
         P = []  # vertices leave blank
 
-
     lambda_ext = 2 * np.pi * a / sizeParam     # exterior wavelength
     lambda_int = lambda_ext / np.real(refInd)  # interior wavelength
 
     # Discretise geometry into voxels
-    h_pref = dom_x  # enforce precise discretisation in x-direction 
+    h_pref = dom_x  # enforce precise discretisation in x-direction
     res_temp = lambda_int / nPerLam  # provisional resolution
     N = np.int(np.ceil(h_pref / res_temp))
     res = h_pref / N
