@@ -4,6 +4,8 @@ def generatedomain(res, dx, dy, dz):
     nx = np.int(np.max((1.0, np.round(dx / res))))
     ny = np.int(np.max((1.0, np.round(dy / res))))
     nz = np.int(np.max((1.0, np.round(dz / res))))
+
+    # commment
     
     Dx = nx * res
     Dy = ny * res
