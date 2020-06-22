@@ -13,7 +13,7 @@ import time
 ko = 40  # Wavenumber
 rad = 1.0  # radius of circle
 lam = 2*np.pi/ko
-refInd = 1.1
+refInd = 1.2
 n_per_lam = 10  # Pixels per wavelength
 
 h_temp = lam / n_per_lam  # temp pixel dimension
@@ -66,8 +66,9 @@ MR = Mr.reshape(M, N, order='F')
 g = lambda x, y: A * 1j/4 * hankel1(0, ko * np.abs(x - y))
 
 # Self term
-self = a**2 * 1j * np.pi/2 * ((1 + 1j * np.euler_gamma) / 2 
-                              -1j / np.pi + 1j / np.pi * np.log(ko * a / 2))
+self = a**2 * 1j * np.pi/2 * ((1 + 1j * np.euler_gamma) / 2
+                              - 1j / np.pi + 1j / np.pi * np.log(ko * a / 2))
+
 
 # Sparse matvec
 def potential(x):
@@ -79,6 +80,7 @@ def potential(x):
             else:
                 toep[i, j] = g(x[0], x[j * M + i])
     return toep
+
 
 toep = ko**2 * potential(x)
 
@@ -134,6 +136,7 @@ def iteration_counter(x):
 # print('Relative residual = ',
 #       np.linalg.norm(mvp(sol)-eInc)/np.linalg.norm(eInc))
 
+
 def mvp_domain(xIn, opCirc, M, N, MR):
     xInRO = xIn.reshape(M, N, order='F')
     XFFT = np.fft.fftn(MR * xInRO, [2*M, 2*N])
@@ -158,21 +161,6 @@ def mvp_domain(xIn, opCirc, M, N, MR):
 #     + sol.reshape(M, N, order='F')
 
 # E = mvp_eval.reshape(M, N, order='F')
-
-# %matplotlib inline
-# from matplotlib import pyplot as plt
-# fig = plt.figure(figsize=(12, 8))
-# ax = fig.gca()
-# # plt.imshow(np.real(u_tot.T), 
-# extent=[-rad_comp,rad_comp,-rad_comp,rad_comp],
-# cmap=plt.cm.get_cmap('coolwarm'), interpolation='spline16')
-# plt.imshow(np.real(E_tot.T), extent=[-wx/2,wx/2,-wy/2,wy/2],
-#            cmap=plt.cm.get_cmap('RdBu_r'))#, interpolation='spline16')
-# plt.xlabel('x')
-# plt.ylabel('y')
-# # circle2 = plt.Circle((0., 0.), rad, color='black', fill=False)
-# # ax.add_artist(circle2)
-# plt.colorbar()
 
 
 xIn = xx
@@ -364,3 +352,17 @@ u_exact = penetrable_circle(ko, ko*refInd, rad, plot_grid)
 
 error_l2 = np.linalg.norm(u_exact - E_tot) / np.linalg.norm(u_exact)
 print('error = ', error_l2)
+
+from matplotlib import pyplot as plt
+fig = plt.figure(figsize=(12, 8))
+ax = fig.gca()
+plt.imshow(np.real(E_tot.T), extent=[-wx/2,wx/2,-wy/2,wy/2],
+           cmap=plt.cm.get_cmap('viridis'), interpolation='spline16')
+plt.xlabel('x')
+plt.ylabel('y')
+# circle2 = plt.Circle((0., 0.), rad, color='black', fill=False)
+# ax.add_artist(circle2)
+plt.colorbar()
+
+fig.savefig('circle.png')
+plt.close()
