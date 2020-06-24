@@ -4,7 +4,7 @@ VINES is a suite of Python codes for solving volume integral equation formulatio
 
 The techniques employed are based on uniform (voxel) spatial discretizations, thus enabling acceleration via the fast-Fourier transform. Furthermore, we include recent preconditioning techniques that yield large reductions in iterative solve times.
 
-The particular scattering scenarios considered when developing this suite are the following:
+The particular scattering scenarios considered in this suite are the following:
 
 * Light scattering by atmospheric ice particles
 * Light propagation within silicon photonics components
