@@ -8,8 +8,9 @@ import sys
 # FIXME: figure out how to avoid this sys.path stuff
 sys.path.append(os.path.join(os.path.dirname(__file__),'../../'))
 import numpy as np
-from piston import plane_circular_piston
+# from piston import plane_circular_piston
 from vines.geometry.geometry import generatedomain
+from vines.fields.piston import plane_circular_piston
 
 k1 = (4225.410428500058 + 0.02498j)
 pressure_surface = 4*10**6
