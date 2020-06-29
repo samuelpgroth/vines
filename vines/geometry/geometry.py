@@ -84,7 +84,7 @@ def koch_snowflake(order, scale=1):
     return x, y, P
 
 
-def shape(geom, refInd, sizeParam, nPerLam, aspectRatio):
+def shape_size_param(geom, refInd, sizeParam, nPerLam, aspectRatio):
     import numpy as np
     from matplotlib import path
 
@@ -140,3 +140,61 @@ def shape(geom, refInd, sizeParam, nPerLam, aspectRatio):
         idx = p.contains_points(points).reshape(L, M, N, order='F')
 
     return r, idx, res, P, lambda_ext, lambda_int
+
+
+def shape(geom, refInd, lambda_ext, radius, nPerLam, aspectRatio):
+    import numpy as np
+    from matplotlib import path
+
+    if geom in 'hex':
+        a = radius
+        b = np.sqrt(3)/2 * a
+        dom_x = 2 * a
+        dom_y = 2 * b
+        dom_z = a * aspectRatio
+        theta = np.arange(0, 7) * 2*np.pi/6
+        verts = a * np.exp(1j * theta)
+        P = np.zeros((verts.shape[0], 2), dtype=np.float64)
+        P[:, 0] = verts.real
+        P[:, 1] = verts.imag
+    elif geom in 'koch':
+        a = radius
+        x, y, _ = koch_snowflake(order=5, scale=a)
+        dom_x = np.max(x) - np.min(x)
+        dom_y = np.max(y) - np.min(y)
+        dom_z = a * aspectRatio
+        P = np.zeros((x.shape[0]+1, 2), dtype=np.float64)
+        P[:-1, 0] = x
+        P[:-1, 1] = y
+        P[-1, 0] = x[0]
+        P[-1, 1] = y[0]
+    elif geom in 'sphere':
+        a = radius
+        dom_x = 2 * a
+        dom_y = dom_x
+        dom_z = dom_x
+        P = []  # vertices leave blank
+
+    # lambda_ext = 2 * np.pi * a / sizeParam     # exterior wavelength
+    lambda_int = lambda_ext / np.real(refInd)  # interior wavelength
+
+    # Discretise geometry into voxels
+    h_pref = dom_x  # enforce precise discretisation in x-direction
+    res_temp = lambda_int / nPerLam  # provisional resolution
+    N = np.int(np.ceil(h_pref / res_temp))
+    res = h_pref / N
+
+    r, L, M, N = generatedomain(res, dom_x, dom_y, dom_z)
+
+    # Determine which points lie inside shape
+    if geom in 'sphere':
+        r_sq = r[:, :, :, 0]**2 + r[:, :, :, 1]**2 + r[:, :, :, 2]**2
+        idx = (r_sq <= a**2)
+        # from IPython import embed; embed()
+    else:
+        # Polyhedron
+        points = r[:, :, :, 0:2].reshape(L*M*N, 2, order='F')
+        p = path.Path(P)
+        idx = p.contains_points(points).reshape(L, M, N, order='F')
+
+    return r, idx, res, P, lambda_int

@@ -5,6 +5,7 @@
 # equation for 3D acoustic scattering
 import os
 import sys
+from IPython import embed
 # FIXME: figure out how to avoid this sys.path stuff
 sys.path.append(os.path.join(os.path.dirname(__file__),'../../'))
 import numpy as np
@@ -21,7 +22,7 @@ radius = 0.005
 # focal_length = 0.03  # 13cm
 # focus = [0., 0., 0.]
 lam = 2 * np.pi / np.real(k1)
-
+print('lam = ', lam)
 def attenuation(f0):
     alpha = 0.217 * (f0 * 1e-6)**2 
     return alpha
@@ -85,7 +86,7 @@ matplotlib.rcParams.update({'font.size': 22})
 # plt.rc('font', family='serif')
 fig = plt.figure(figsize=(15, 5))
 ax = fig.gca()
-plt.imshow(np.abs(P[:, :, np.int(np.floor(N/2))].T),
+plt.imshow(np.real(P[:, :, np.int(np.floor(N/2))].T),
            cmap=plt.cm.get_cmap('viridis'), interpolation='spline16')
 plt.xlabel(r'$x$')
 plt.ylabel(r'$y$')
