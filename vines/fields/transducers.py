@@ -46,14 +46,14 @@ def bowl_transducer(k, focal_length, focus, radius,
         y = -x_t
         x = z_t
 
-    def eval_source_vec(x, y, z, points, k):
-        # p = np.zeros_like(points[0])
-        p = 0.0
-        for i in range(x.shape[0]):
-            dist = np.sqrt((points[0] - x[i])**2 + (points[1] - y[i])**2 +
-                           (points[2] - z[i])**2)
-            p += np.exp(1j * k * dist) / (4 * np.pi * dist)
-        return p
+    # def eval_source_vec(x, y, z, points, k):
+    #     # p = np.zeros_like(points[0])
+    #     p = 0.0
+    #     for i in range(x.shape[0]):
+    #         dist = np.sqrt((points[0] - x[i])**2 + (points[1] - y[i])**2 +
+    #                        (points[2] - z[i])**2)
+    #         p += np.exp(1j * k * dist) / (4 * np.pi * dist)
+    #     return p
 
 
     from numba import njit, prange
@@ -77,3 +77,22 @@ def bowl_transducer(k, focal_length, focus, radius,
     # p = eval_source_vec(x, y, z, points, k)
 
     return x, y, z, p*a
+
+
+def normalise_power(power, rho, c0, radius, k1, focal_length,
+                    focus, n_elements, aperture_radius):
+    import numpy as np
+    n_quad = 500
+    r_quad_dim = radius * 1.0
+    r_quad = np.linspace(0, r_quad_dim, n_quad)
+    # x_location_disk = x_location
+    x_location_disk = focal_length - 0.98 * np.sqrt(focal_length**2 - radius**2)
+    points_quad = np.vstack((x_location_disk * np.ones(n_quad),
+                            np.zeros(n_quad),
+                            r_quad))
+
+    _, _, _, p_quad = bowl_transducer(np.real(k1), focal_length, focus, radius,
+                        n_elements, aperture_radius, points_quad,'x')
+    integral = 2*np.pi*np.sum(np.abs(p_quad)**2 * r_quad)*r_quad_dim/n_quad 
+    p0 = np.sqrt(2*rho*c0*power/integral)
+    return p0
