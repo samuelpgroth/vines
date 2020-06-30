@@ -76,9 +76,9 @@ def mie_function(sizeParam, n, Nx):
     theta=np.arctan2(fem_xy,fem_xx);
 
 
-    print('frequency = ', freq);
-    print('k(air) = ', k1);
-    print('k(water) =', k2);
+    # print('frequency = ', freq);
+    # print('k(air) = ', k1);
+    # print('k(water) =', k2);
     # Legendre polynomial terms
     P_m=np.zeros((Nterms+1,npts),dtype=np.complex128);
     for m in range(0, Nterms+1): # I need to access all (N+1) places in the 
@@ -91,7 +91,7 @@ def mie_function(sizeParam, n, Nx):
             P_m[m,j] = aa[0][0,m];
 
 
-    print('computing field for transmission problem..')
+    # print('computing field for transmission problem..')
     for m in range(0, Nterms+1):
         j_m_k1a = scipy.special.spherical_jn(m,k1*a,False);
         y_m_k1a = scipy.special.spherical_yn(m,k1*a,False);

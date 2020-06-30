@@ -113,7 +113,7 @@ error = np.linalg.norm(U_centre-np.conj(P)) / np.linalg.norm(P)
 print('Error = ', error)
 
 
-'          Create pretty plot of field over central slice of the sphere       '
+# Create pretty plot of field over central slice of the sphere
 fig = plt.figure(figsize=(12, 8))
 ax = fig.gca()
 # Domain extremes
