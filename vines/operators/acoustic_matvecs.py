@@ -6,7 +6,7 @@ pyfftw.config.NUM_THREADS = multiprocessing.cpu_count()
 def mvp_vec_fftw(xIn, circ_op, idx, Mr):
     ''' Matrix-vector product with FFTW'''
     (L, M, N) = Mr.shape
-    xInRO = xIn.reshape(L, M, N, order = 'F') 
+    xInRO = xIn.reshape(L, M, N, order='F')
     xInRO[np.invert(idx)] = 0.0
 
     xOut = np.zeros((L, M, N), dtype=np.complex128)
@@ -24,7 +24,7 @@ def mvp_vec_fftw(xIn, circ_op, idx, Mr):
 def mvp_vec(xIn, circ_op, idx, Mr):
     ''' Matrix-vector product with numpy's FFT'''
     (L, M, N) = Mr.shape
-    xInRO = xIn.reshape(L, M, N, order = 'F') 
+    xInRO = xIn.reshape(L, M, N, order='F')
     xInRO[np.invert(idx)] = 0.0
 
     xOut = np.zeros((L, M, N), dtype=np.complex128)
@@ -42,7 +42,7 @@ def mvp_vec(xIn, circ_op, idx, Mr):
 # Evaluate solution in domain - requires on MVP
 def mvp_domain(xIn, circ_op, idx, Mr):
     (L, M, N) = Mr.shape
-    xInRO = xIn.reshape(L, M, N, order = 'F') 
+    xInRO = xIn.reshape(L, M, N, order='F')
     xInRO[np.invert(idx)] = 0.0
 
     xOut = np.zeros((L, M, N), dtype=np.complex128)
