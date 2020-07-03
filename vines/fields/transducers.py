@@ -1,10 +1,10 @@
 def bowl_transducer(k, focal_length, focus, radius,
                     n_elements, aperture_radius, points,
                     axis):
-    ''' Generates a field from a uniform bowl transducer with or without 
-    an aperture. This is essentially a segment of a sphere's surface. 
-    We compute it in a slightly crude way by spreading many point sources 
-    evenly over the surface. This is done according to 
+    ''' Generates a field from a uniform bowl transducer with or without
+    an aperture. This is essentially a segment of a sphere's surface.
+    We compute it in a slightly crude way by spreading many point sources
+    evenly over the surface. This is done according to
     `How to generate equidistributed points on the surface of a sphere' by
     Markus Deserno (https://www.cmu.edu/biolphys/deserno/pdf/sphere_equi.pdf).
     Note that in practice such tranducers with uniformly distributed sources,

@@ -79,8 +79,7 @@ omega = 2 * np.pi * f1
 dx = lam / nPerLam
 
 # Dimension of computation domain
-# x_start = 0.01
-x_start = 0.009790089908332557
+x_start = 0.01
 x_end = roc + 0.01
 wx = x_end - x_start
 wy = outer_D / 4
@@ -147,7 +146,7 @@ nz_centre = np.int(np.floor(N/2))
 n_harm = 2
 for i_harm in range(1, n_harm):
     f2 = (i_harm + 1) * f1
-    k2 = (i_harm + 1) * np.pi * f2 / c + 1j * attenuation(f2, alpha0, eta)
+    k2 = 2 * np.pi * f2 / c + 1j * attenuation(f2, alpha0, eta)
 
     # Assemble volume potential Toeplitz operator perform circulant embedding
     start = time.time()
@@ -158,33 +157,39 @@ for i_harm in range(1, n_harm):
     print('Operator assembly and its circulant embedding:', end-start)
 
     # Create vector for matrix-vector product
-    if i_harm==1:
+    if i_harm == 1:
         # Second harmonic
-        xIn = 2 * beta * omega**2 / (rho * c**4) * P[0] * P[0]
-    elif i_harm==2:
+        xIn = -2 * beta * omega**2 / (rho * c**4) * P[0] * P[0]
+    elif i_harm == 2:
         # Third harmonic
-        xIn = 9 * beta * omega**2 / (rho * c**4) * P[0] * P[1]
+        xIn = -9 * beta * omega**2 / (rho * c**4) * P[0] * P[1]
+    elif i_harm == 3:
+        # Fourth harmonic
+        xIn = -8 * beta * omega**2 / (rho * c**4) * \
+            (P[1] * P[1] + 2 * P[0] * P[2])
+    elif i_harm == 4:
+        # Fifth harmonic
+        xIn = -25 * beta * omega**2 / (rho * c**4) * \
+            (P[0] * P[3] + P[1] * P[2])
+
 
     xInVec = xIn.reshape((L*M*N, 1), order='F')
     idx = np.ones((L, M, N), dtype=bool)
+
 
     def mvp(x):
         'Matrix-vector product operator'
         return mvp_volume_potential(x, circ_op, idx, Mr)
 
-    # def mvp2(x):
-    #     'Matrix-vector product operator'
-    #     return mvp_vec(x, circ_op, idx, Mr)
-
 
     # Voxel permittivities
     Mr = np.ones((L, M, N), dtype=np.complex128)
-    
 
     # Perform matrix-vector product
+    start = time.time()
     P[i_harm] = mvp(xInVec).reshape(L, M, N, order='F')
-    # from IPython import embed; embed()
-    # exit()
+    end = time.time()
+    print('MVP time = ', end - start)
 
 # Plot harmonics along central axis
 x_line = (r[:, ny_centre, nz_centre, 0]) * 100
