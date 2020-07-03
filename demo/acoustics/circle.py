@@ -364,5 +364,5 @@ plt.ylabel('y')
 # ax.add_artist(circle2)
 plt.colorbar()
 
-fig.savefig('circle.png')
+fig.savefig('results/circle.pdf')
 plt.close()

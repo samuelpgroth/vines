@@ -175,20 +175,20 @@ plt.xlabel('\# iterations')
 plt.legend(('No preconditioning', 'Circulant preconditioning'),
            shadow=True, loc=(0.37, 0.7), handlelength=1.5, fontsize=20)
 
-fig.savefig('covergence.png')
+fig.savefig('results/convergence.pdf')
 plt.close()
 
-# Plot field on central slice
-fig = plt.figure(figsize=(12, 8))
-ax = fig.gca()
-plt.imshow(np.real(U_centre.T),
-        extent=[r[0, 0, 0, 0], r[-1, 0, 0, 0], r[0, 0, 0, 1], r[0, -1, 0, 1]],
-        cmap=plt.cm.get_cmap('viridis'), interpolation='spline16')
-plt.xlabel('$x$ (m)')
-plt.ylabel('$y$ (m)')
-circle = plt.Circle((0., 0.), radius, color='black', fill=False)
-ax.add_artist(circle)
-plt.colorbar()
+# # Plot field on central slice
+# fig = plt.figure(figsize=(12, 8))
+# ax = fig.gca()
+# plt.imshow(np.real(U_centre.T),
+#         extent=[r[0, 0, 0, 0], r[-1, 0, 0, 0], r[0, 0, 0, 1], r[0, -1, 0, 1]],
+#         cmap=plt.cm.get_cmap('viridis'), interpolation='spline16')
+# plt.xlabel('$x$ (m)')
+# plt.ylabel('$y$ (m)')
+# circle = plt.Circle((0., 0.), radius, color='black', fill=False)
+# ax.add_artist(circle)
+# plt.colorbar()
 
-fig.savefig('sphere.png')
-plt.close()
+# fig.savefig('sphere.png')
+# plt.close()
