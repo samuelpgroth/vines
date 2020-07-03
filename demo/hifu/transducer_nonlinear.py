@@ -32,6 +32,7 @@ from vines.geometry.geometry import generatedomain
 from vines.fields.transducers import bowl_transducer, normalise_power
 import time
 import matplotlib
+from matplotlib import pyplot as plt
 
 '''                        Define medium parameters                         '''
 # * speed of sound (c)
@@ -101,13 +102,14 @@ x, y, z, p = bowl_transducer(k1, roc, focus, outer_D / 2, n_elements,
                              inner_D / 2, points.T, 'x')
 end = time.time()
 print('Incident field evaluation time (s):', end-start)
-dist_from_focus = np.sqrt((points[:, 0]-focus[0])**2 + points[:, 1]**2 + points[:,2]**2)
-idx_near = np.abs(dist_from_focus - roc)<5e-4
+dist_from_focus = np.sqrt((points[:, 0]-focus[0])**2 + points[:, 1]**2 +
+                           points[:,2]**2)
+idx_near = np.abs(dist_from_focus - roc) < 5e-4
 p[idx_near] = 0.0
 
 # Normalise incident field to achieve desired total acoutic power
 p0 = normalise_power(power, rho, c, outer_D/2, k1, roc,
-                    focus, n_elements, inner_D/2)
+                     focus, n_elements, inner_D/2)
 
 p *= p0
 
@@ -118,7 +120,6 @@ P[0] = p.reshape(L, M, N, order='F')
 
 # Create a pretty plot of the first harmonic in the domain
 # matplotlib.use('Agg')
-from matplotlib import pyplot as plt
 matplotlib.rcParams.update({'font.size': 22})
 plt.rc('font', family='serif')
 plt.rc('text', usetex=True)
@@ -172,15 +173,12 @@ for i_harm in range(1, n_harm):
         xIn = -25 * beta * omega**2 / (rho * c**4) * \
             (P[0] * P[3] + P[1] * P[2])
 
-
     xInVec = xIn.reshape((L*M*N, 1), order='F')
     idx = np.ones((L, M, N), dtype=bool)
-
 
     def mvp(x):
         'Matrix-vector product operator'
         return mvp_volume_potential(x, circ_op, idx, Mr)
-
 
     # Voxel permittivities
     Mr = np.ones((L, M, N), dtype=np.complex128)
@@ -195,8 +193,8 @@ for i_harm in range(1, n_harm):
 x_line = (r[:, ny_centre, nz_centre, 0]) * 100
 fig = plt.figure(figsize=(14, 8))
 ax = fig.gca()
-plt.plot(x_line, np.abs(P[0, :, ny_centre, nz_centre])/1e6,'k-')
-plt.plot(x_line, np.abs(P[1, :, ny_centre, nz_centre])/1e6,'r-')
+plt.plot(x_line, np.abs(P[0, :, ny_centre, nz_centre])/1e6, 'k-')
+plt.plot(x_line, np.abs(P[1, :, ny_centre, nz_centre])/1e6, 'r-')
 plt.grid(True)
 # plt.xlim([1, 7])
 plt.ylim([0, 8])

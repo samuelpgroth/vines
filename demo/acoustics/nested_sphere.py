@@ -1,10 +1,11 @@
 #
-# Scattering of a plane wave by a homogeneous sphere
+# Scattering of a plane wave by a nested sphere
 # ==================================================
 #
 # This demo illustrates how to:
 #
-# * Compute the scattering of a plane wave by a homogeneous dielectric obstable
+# * Compute the scattering of a plane wave by a nested or "layered" dielectric 
+#   sphere
 # * Solve the volume integral equation using an iterative method
 # * Postprocess the solution to evaluate the total field
 # * Check the accuracy by comparing to the analytical solution
@@ -23,6 +24,7 @@ from vines.operators.acoustic_matvecs import mvp_vec_fftw, mvp_domain
 from scipy.sparse.linalg import LinearOperator, gmres
 from vines.mie_series_function import mie_function
 from matplotlib import pyplot as plt
+import matplotlib
 import time
 
 '''                         Define parameters                               '''
@@ -31,8 +33,10 @@ import time
 # travelling in the positive x-direction
 # * Sphere info
 geom = 'sphere'
-radius = 1e-3
-refInd = 1.2 + 1j * 0.0
+radius = 2e-3
+radius_inner = radius / 2
+refInd = 1.1 + 0.0j
+refInd_inner = 1.2 + 0.0j
 # * Wavelength
 lambda_ext = 5e-4
 # * Plane wave info
@@ -40,6 +44,7 @@ Ao = 1
 direction = np.array((1, 0, 0))
 ko = 2 * np.pi / lambda_ext  # exterior wavenumber
 
+print('Size parameter = ', ko * radius)
 
 # Define the resolution of the voxel mesh - this is given in terms of number
 # of voxels per wavelength. 10 voxels per wavelength typically gives a
@@ -47,10 +52,10 @@ ko = 2 * np.pi / lambda_ext  # exterior wavenumber
 # which the convergence of the scheme is considered w.r.t. mesh resolution
 nPerLam = 10
 
-
 # Get mesh geometry and interior wavelength
-r, idx, res, P, lambda_int = shape(geom, refInd, lambda_ext, radius,
-                                   nPerLam, 1)
+r, idx, res, P, lambda_int = shape(geom,
+                                   max(np.real(refInd), np.real(refInd_inner)),
+                                   lambda_ext, radius, nPerLam, 1)
 
 (L, M, N) = r.shape[0:3]  # number of voxels in x-, y-, z-directions
 
@@ -60,6 +65,11 @@ Uinc = PlaneWave(Ao, ko, direction, r)
 # Voxel permittivities
 Mr = np.zeros((L, M, N), dtype=np.complex128)
 Mr[idx] = refInd**2 - 1
+
+r_sq = r[:, :, :, 0]**2 + r[:, :, :, 1]**2 + r[:, :, :, 2]**2
+idx_inner = (r_sq <= radius_inner**2)
+
+Mr[idx_inner] = refInd_inner**2 - 1
 
 # Assemble volume potential operator
 toep = volume_potential(ko, r)
@@ -79,7 +89,6 @@ def mvp(x):
     return mvp_vec_fftw(x, circ_op, idx, Mr)
 
 
-# Linear oper
 A = LinearOperator((L*M*N, L*M*N), matvec=mvp)
 
 
@@ -100,8 +109,10 @@ print('Solve time = ', end-start, 's')
 # Reshape solution
 J = sol.reshape(L, M, N, order='F')
 
-# Get the analytical solution for comparison
-P = mie_function(ko * radius, refInd, L)
+# FIXME: translate Pierre's matlab code for analytical solution for nested
+# sphere and use below (currently below is the homogeneous sphere)
+# # Get the analytical solution for comparison
+# P = mie_function(ko * radius, refInd, L)
 
 idx_n = np.ones((L, M, N), dtype=bool)
 
@@ -109,23 +120,30 @@ Utemp = mvp_domain(sol, circ_op, idx_n, Mr).reshape(L, M, N, order='F')
 U = Uinc - Utemp + J
 U_centre = U[:, :, np.int(np.round(N/2))]
 
-error = np.linalg.norm(U_centre-np.conj(P)) / np.linalg.norm(P)
-print('Error = ', error)
+# error = np.linalg.norm(U_centre-np.conj(P)) / np.linalg.norm(P)
+# print('Error = ', error)
 
 
 # Create pretty plot of field over central slice of the sphere
-fig = plt.figure(figsize=(12, 8))
+matplotlib.rcParams.update({'font.size': 22})
+plt.rc('font', family='serif')
+plt.rc('text', usetex=True)
+fig = plt.figure(figsize=(12, 9))
 ax = fig.gca()
 # Domain extremes
 xmin, xmax = r[0, 0, 0, 0], r[-1, 0, 0, 0]
 ymin, ymax = r[0, 0, 0, 1], r[0, -1, 0, 1]
 plt.imshow(np.real(U_centre.T),
-           extent=[xmin, xmax, ymin, ymax],
+           extent=[xmin*1e3, xmax*1e3, ymin*1e3, ymax*1e3],
            cmap=plt.cm.get_cmap('viridis'), interpolation='spline16')
-plt.xlabel('$x$ (m)')
-plt.ylabel('$y$ (m)')
-circle = plt.Circle((0., 0.), radius, color='black', fill=False)
+plt.xlabel(r'$x$ (mm)')
+plt.ylabel(r'$y$ (mm)')
+circle = plt.Circle((0., 0.), radius*1e3, color='black', fill=False,
+                    linestyle=':')
+circle_inner = plt.Circle((0., 0.), radius_inner*1e3, color='black', fill=False,
+                          linestyle=':')
 ax.add_artist(circle)
+ax.add_artist(circle_inner)
 plt.colorbar()
-fig.savefig('sphere.png')
+fig.savefig('nested_sphere.pdf')
 plt.close()
