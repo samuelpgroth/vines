@@ -11,6 +11,11 @@ The particular scattering scenarios considered in this suite are the following:
 * Acoustic scattering by simple shapes (2D) and (3D)
 * High-intensity focused ultrasound in the body
 
+## To do list
+* Complete transducer_nonlinear_scatter.py 
+* Include second operator to account for smooth density contrast
+* Neaten
+
 ## Bibliography
 This work is partially discussed in the following publications:
 * [**Adiabatic absorbers in photonics simulations with the volume integral equation method**](https://ieeexplore.ieee.org/abstract/document/8369129)<br>
