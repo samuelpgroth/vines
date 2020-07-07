@@ -13,7 +13,8 @@ The particular scattering scenarios considered in this suite are the following:
 
 ## To do list
 * Complete transducer_nonlinear_scatter.py 
-* Include second operator to account for smooth density contrast
+* Include second operator to account for smooth density contrast using
+https://github.com/maroba/findiff python package
 * Neaten
 
 ## Bibliography
