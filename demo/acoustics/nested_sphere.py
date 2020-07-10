@@ -4,7 +4,7 @@
 #
 # This demo illustrates how to:
 #
-# * Compute the scattering of a plane wave by a nested or "layered" dielectric 
+# * Compute the scattering of a plane wave by a nested or "layered" dielectric
 #   sphere
 # * Solve the volume integral equation using an iterative method
 # * Postprocess the solution to evaluate the total field

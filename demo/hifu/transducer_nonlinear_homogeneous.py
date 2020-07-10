@@ -67,8 +67,13 @@ power = 44
 focus = [roc, 0., 0.]
 # FIXME: need source pressure as input
 
+# How many harmonics to compute
+# (mesh resolution should be adjusted accordingly, I recommend setting
+# nPerLam  >= 3 * n_harm, depending on desired speed and/or accuracy)
+n_harm = 2
+
 # Mesh resolution (number of voxels per fundamental wavelength)
-nPerLam = 4
+nPerLam = 6
 
 # Compute useful quantities: wavelength (lam), wavenumber (k0),
 # angular frequency (omega)
@@ -80,12 +85,15 @@ omega = 2 * np.pi * f1
 dx = lam / nPerLam
 
 # Dimension of computation domain
+# x_start needs to be close to the transducer
+# x_end can be just beyond the focus
+# the width in the y,z directions should be around the width of outer_D,
+# but you can shrink this to speed up computations if required
 x_start = 0.01
 x_end = roc + 0.01
 wx = x_end - x_start
-wy = outer_D / 4
+wy = outer_D * 0.9
 wz = wy
-# embed()
 
 start = time.time()
 r, L, M, N = generatedomain(dx, wx, wy, wz)
@@ -93,7 +101,6 @@ r, L, M, N = generatedomain(dx, wx, wy, wz)
 r[:, :, :, 0] = r[:, :, :, 0] - r[0, 0, 0, 0] + x_start
 end = time.time()
 print('Mesh generation time:', end-start)
-# embed()
 points = r.reshape(L*M*N, 3, order='F')
 
 print('Number of voxels = ', L*M*N)
@@ -115,13 +122,10 @@ p0 = normalise_power(power, rho, c, outer_D/2, k1, roc,
 
 p *= p0
 
-n_harm = 2
 P = np.zeros((n_harm, L, M, N), dtype=np.complex128)
 P[0] = p.reshape(L, M, N, order='F')
 
-
 # Create a pretty plot of the first harmonic in the domain
-# matplotlib.use('Agg')
 matplotlib.rcParams.update({'font.size': 22})
 plt.rc('font', family='serif')
 plt.rc('text', usetex=True)
@@ -136,17 +140,10 @@ plt.xlabel(r'$x$ (cm)')
 plt.ylabel(r'$y$ (cm)')
 cbar = plt.colorbar()
 cbar.ax.set_ylabel('Pressure (MPa)')
-fig.savefig('H101.png')
+fig.savefig('results/H101.png')
 plt.close()
 
-ny_centre = np.int(np.floor(M/2))
-nz_centre = np.int(np.floor(N/2))
-# x_line = (r[:, ny_centre, nz_centre, 0]) * 100
-# plt.plot(x_line, np.abs(P1[:, ny_centre, nz_centre])/1e6,'k-', linewidth=2)
-# plt.show()
-
 '''      Compute the next harmonics by evaluating the volume potential      '''
-n_harm = 2
 for i_harm in range(1, n_harm):
     f2 = (i_harm + 1) * f1
     k2 = 2 * np.pi * f2 / c + 1j * attenuation(f2, alpha0, eta)
@@ -192,15 +189,17 @@ for i_harm in range(1, n_harm):
     print('MVP time = ', end - start)
 
 # Plot harmonics along central axis
+ny_centre = np.int(np.floor(M/2))
+nz_centre = np.int(np.floor(N/2))
 x_line = (r[:, ny_centre, nz_centre, 0]) * 100
 fig = plt.figure(figsize=(14, 8))
 ax = fig.gca()
 plt.plot(x_line, np.abs(P[0, :, ny_centre, nz_centre])/1e6, 'k-')
 plt.plot(x_line, np.abs(P[1, :, ny_centre, nz_centre])/1e6, 'r-')
 plt.grid(True)
-# plt.xlim([1, 7])
+plt.xlim([x_start*100, x_end*100])
 plt.ylim([0, 8])
 plt.xlabel(r'Axial distance (cm)')
 plt.ylabel(r'Pressure (MPa)')
-fig.savefig('H101_harms_axis.pdf')
+fig.savefig('results/H101_harms_axis.pdf')
 plt.close()

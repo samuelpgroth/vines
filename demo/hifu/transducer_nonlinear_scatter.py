@@ -30,6 +30,7 @@ from vines.mie_series_function import mie_function
 from matplotlib import pyplot as plt
 from vines.geometry.geometry import generatedomain, grid3d
 from vines.fields.transducers import bowl_transducer, normalise_power
+from vie_solve import vie_solver
 import time
 import matplotlib
 from matplotlib import pyplot as plt
@@ -70,9 +71,9 @@ focus = [roc, 0., 0.]
 '''                            Define scatterer                             '''
 # Define a 1mm radius sphere halfway between transducer and focus
 geom = 'sphere'
-radius = 5e-3
-refInd = 1.2 + 1j * 0.0  # defined as k_int / k_ext FIXME:CHECK
-location = [roc - 0.01, 0., 0.]
+radius = 10e-3
+refInd = 1.07 + 1j * 0.0  # defined as k_int / k_ext FIXME:CHECK
+location = [roc - 0.02, 0., 0.]
 
 # Compute useful quantities: wavelength (lam), wavenumber (k0),
 # angular frequency (omega)
@@ -81,7 +82,7 @@ k1 = 2 * np.pi * f1 / c + 1j * attenuation(f1, alpha0, eta)
 omega = 2 * np.pi * f1
 
 # Mesh resolution (number of voxels per fundamental wavelength)
-nPerLam = 5
+nPerLam = 6
 
 # Create voxel mesh
 dx = lam / nPerLam
@@ -125,7 +126,9 @@ p *= p0
 
 n_harm = 2
 P = np.zeros((n_harm, L, M, N), dtype=np.complex128)
-P[0] = p.reshape(L, M, N, order='F')
+P_sca = np.zeros((n_harm, L, M, N), dtype=np.complex128)
+P_inc = np.zeros((n_harm, L, M, N), dtype=np.complex128)
+P_inc[0] = p.reshape(L, M, N, order='F')
 
 '''                    Compute scattering (first harmonic)                  '''
 # First locate the portion of mesh inside the scatterer
@@ -135,9 +138,12 @@ idx_scat = (r_sq <= radius**2)
 
 xd, yd, zd = r[:, :, :, 0], r[:, :, :, 1], r[:, :, :, 2]
 # Find indices of bounding box of scatterer
-idx_box = (xd<=max(xd[idx_scat])+1e-6) * (xd>=min(xd[idx_scat])-1e-6) * \
-          (yd<=max(yd[idx_scat])+1e-6) * (yd>=min(yd[idx_scat])-1e-6) * \
-          (zd<=max(zd[idx_scat])+1e-6) * (zd>=min(zd[idx_scat])-1e-6)
+idx_box = (xd <= max(xd[idx_scat]) + 1e-6) * \
+          (xd >= min(xd[idx_scat]) - 1e-6) * \
+          (yd <= max(yd[idx_scat]) + 1e-6) * \
+          (yd >= min(yd[idx_scat]) - 1e-6) * \
+          (zd <= max(zd[idx_scat]) + 1e-6) * \
+          (zd >= min(zd[idx_scat]) - 1e-6)
 
 x_box = np.arange(min(xd[idx_scat]), max(xd[idx_scat]) + 1e-6, dx)
 y_box = np.arange(min(yd[idx_scat]), max(yd[idx_scat]) + 1e-6, dx)
@@ -154,80 +160,16 @@ idx_scat_box = (r_sq_box <= radius**2)
 Mr_box = np.zeros((L_box, M_box, N_box), dtype=np.complex128)
 Mr_box[idx_scat_box] = refInd**2 - 1
 
-toep_scat = volume_potential(k1, r_box)
-toep_scat = k1**2 * toep_scat
+'''         Solve scattering problem only over inhomogeneous region         '''
+# FIXME: come up with a better name for J
+sol, J, u_sca = vie_solver(Mr_box, r_box, idx_scat_box, P_inc[0][idx_scat], k1)
 
-# Circulant embedding of volume potential operator
-circ_op = circulant_embed_fftw(toep_scat, L_box, M_box, N_box)
+'''          Evaluate total field over total domain (u_inc + u_sca)         '''
+# Toeplitz operator
+T = k1**2 * volume_potential(k1, r)
 
-# Create array that has the incident field values in sphere, and zero outside
-xIn = np.zeros((L_box, M_box, N_box), dtype=np.complex128)
-xIn[idx_scat_box] = P[0][idx_scat]
-xInVec = xIn.reshape((L_box*M_box*N_box, 1), order='F')
-
-# from IPython import embed; embed()
-def mvp(x):
-    'Matrix-vector product operator'
-    return mvp_vec_fftw(x, circ_op, idx_scat_box, Mr_box)
-
-
-# Linear oper
-A = LinearOperator((L_box*M_box*N_box, L_box*M_box*N_box), matvec=mvp)
-
-
-def residual_vector(rk):
-    'Function to store residual vector in iterative solve'
-    global resvec
-    resvec.append(rk)
-
-
-# Iterative solve with GMRES (could equally use BiCG-Stab, for example)
-start = time.time()
-resvec = []
-sol, info = gmres(A, xInVec, tol=1e-4, callback=residual_vector)
-print("The linear system was solved in {0} iterations".format(len(resvec)))
-end = time.time()
-print('Solve time = ', end-start, 's')
-
-# # Reshape solution
-J = sol.reshape(L_box, M_box, N_box, order='F')
-
-idx_n = np.ones((L_box, M_box, N_box), dtype=bool)
-Utemp = mvp_potential_x_perm(sol, circ_op, idx_n, Mr_box).reshape(L_box, M_box, N_box, order='F')
-# U = Uinc + Utemp
-U = Utemp
-U_centre = U[:, :, np.int(np.round(N_box/2))]
-
-# Create pretty plot of field over central slice of the sphere
-matplotlib.rcParams.update({'font.size': 22})
-plt.rc('font', family='serif')
-plt.rc('text', usetex=True)
-fig = plt.figure(figsize=(12, 9))
-ax = fig.gca()
-# Domain extremes
-xmin, xmax = r_box[0, 0, 0, 0], r_box[-1, 0, 0, 0]
-ymin, ymax = r_box[0, 0, 0, 1], r_box[0, -1, 0, 1]
-plt.imshow(np.abs(U_centre.T),
-           extent=[xmin*1e3, xmax*1e3, ymin*1e3, ymax*1e3],
-           cmap=plt.cm.get_cmap('viridis'), interpolation='spline16')
-plt.xlabel(r'$x$ (mm)')
-plt.ylabel(r'$y$ (mm)')
-circle = plt.Circle((0., 0.), radius*1e3, color='black', fill=False,
-                    linestyle=':')
-ax.add_artist(circle)
-plt.colorbar()
-fig.savefig('results/sphere_focused_1.pdf')
-plt.close()
-
-
-# FIXME: fix below
-
-# Evaluate the scattered field in the total domain
-idx_n = np.ones((L, M, N), dtype=bool)
-
-# Need volume potential on total domain
-toep_op_tot = k1**2 * volume_potential(k1, r)
-circ_op_tot = circulant_embed_fftw(toep_op_tot, L, M, N)
+# Circulant embedding of Toeplitz operator
+circ = circulant_embed_fftw(T, L, M, N)
 
 # Voxel permittivities
 Mr = np.zeros((L, M, N), dtype=np.complex128)
@@ -235,37 +177,17 @@ Mr[idx_scat] = refInd**2 - 1
 # Mr[idx_box] = Mr_box.reshape((L_box*M_box*N_box, 1), order='F')[:, 0]
 
 J_domain = np.zeros((L, M, N), dtype=np.complex128)
-# from IPython import embed;embed()
 J_domain[idx_box] = J.reshape((L_box*M_box*N_box, 1))[:, 0]
-# from IPython import embed; embed()
 
+# Evaluate at all voxels
+idx_all = np.ones((L, M, N), dtype=bool)
 
-U_sca = mvp_potential_x_perm(J_domain.reshape((L*M*N, 1), order='F'), circ_op_tot, idx_n, Mr).reshape(L, M, N, order='F')
-U = P[0] + U_sca
-U_centre = U_sca[:, :, np.int(np.round(N/2))]
+P_sca[0] = mvp_potential_x_perm(J_domain.reshape((L*M*N, 1), order='F'),
+                                circ, idx_all, Mr).reshape(L, M, N, order='F')
 
-from IPython import embed;embed()
+P[0] = P_inc[0] + P_sca[0]
 
-# Create a pretty plot of the first harmonic in the domain
-# matplotlib.use('Agg')
-matplotlib.rcParams.update({'font.size': 22})
-plt.rc('font', family='serif')
-plt.rc('text', usetex=True)
-xmin, xmax = r[0, 0, 0, 0] * 100, r[-1, 0, 0, 0] * 100
-ymin, ymax = r[0, 0, 0, 1] * 100, r[0, -1, 0, 1] * 100
-fig = plt.figure(figsize=(10, 10))
-ax = fig.gca()
-plt.imshow(np.abs(Mr[:, :, np.int(np.floor(N/2))].T),
-           extent=[xmin, xmax, ymin, ymax],
-           cmap=plt.cm.get_cmap('viridis'))#, interpolation='spline16')
-plt.xlabel(r'$x$ (cm)')
-plt.ylabel(r'$y$ (cm)')
-cbar = plt.colorbar()
-cbar.ax.set_ylabel('Pressure (MPa)')
-fig.savefig('H101_scatter4.png')
-plt.close()
-
-exit()
+# exit()
 
 # FOR LATER, when we incorporate density variation
 # from findiff import FinDiff
@@ -310,31 +232,74 @@ for i_harm in range(1, n_harm):
             (P[0] * P[3] + P[1] * P[2])
 
     xInVec = xIn.reshape((L*M*N, 1), order='F')
-    idx = np.ones((L, M, N), dtype=bool)
+    idx_all = np.ones((L, M, N), dtype=bool)
 
-    def mvp(x):
-        'Matrix-vector product operator'
-        return mvp_volume_potential(x, circ_op, idx, Mr)
+    # def mvp(x):
+    #     'Matrix-vector product operator'
+    #     return mvp_volume_potential(x, circ_op, idx, Mr)
 
-    # Voxel permittivities
-    Mr = np.ones((L, M, N), dtype=np.complex128)
+    # Voxel permittivities for volume potential (all ones)
+    Mr_vol_pot = np.ones((L, M, N), dtype=np.complex128)
 
     # Perform matrix-vector product
     start = time.time()
-    P[i_harm] = mvp(xInVec).reshape(L, M, N, order='F')
-    end = time.time()
-    print('MVP time = ', end - start)
+    # P_inc[i_harm] = mvp(xInVec).reshape(L, M, N, order='F')
+    P_inc[i_harm] = mvp_volume_potential(xInVec, circ_op, idx_all, Mr_vol_pot).reshape(L, M, N, order='F')
+
+    # from IPython import embed; embed()
+
+    # Solve scattering problem
+    sol, J, u_sca = vie_solver(Mr_box, r_box, idx_scat_box,
+                               P_inc[i_harm][idx_scat], k2)
+
+    # Evaluate scattered field in total domain
+    # Toeplitz operator
+    T = k2**2 * volume_potential(k2, r)
+
+    # Circulant embedding of Toeplitz operator
+    circ = circulant_embed_fftw(T, L, M, N)
+
+    J_domain = np.zeros((L, M, N), dtype=np.complex128)
+    J_domain[idx_box] = J.reshape((L_box*M_box*N_box, 1))[:, 0]
+
+    P_sca[i_harm] = mvp_potential_x_perm(J_domain.reshape((L*M*N, 1), order='F'),
+                                    circ, idx_all, Mr).reshape(L, M, N, order='F')
+
+    P[i_harm] = P_inc[i_harm] + P_sca[i_harm]
+
+
 
 # Plot harmonics along central axis
+matplotlib.rcParams.update({'font.size': 22})
+plt.rc('font', family='serif')
+plt.rc('text', usetex=True)
 x_line = (r[:, ny_centre, nz_centre, 0]) * 100
 fig = plt.figure(figsize=(14, 8))
 ax = fig.gca()
 plt.plot(x_line, np.abs(P[0, :, ny_centre, nz_centre])/1e6, 'k-')
 plt.plot(x_line, np.abs(P[1, :, ny_centre, nz_centre])/1e6, 'r-')
 plt.grid(True)
-# plt.xlim([1, 7])
-plt.ylim([0, 8])
+plt.xlim([x_start*100, x_end*100])
+plt.ylim([0, np.ceil(np.max(np.abs(P[0, :, ny_centre, nz_centre])/1e6))])
 plt.xlabel(r'Axial distance (cm)')
 plt.ylabel(r'Pressure (MPa)')
-fig.savefig('H101_harms_axis.pdf')
+fig.savefig('results/H101_harms_axis_scatter.pdf')
+plt.close()
+
+
+
+# Create a pretty plot of the first harmonic in the domain
+# matplotlib.use('Agg')
+xmin, xmax = r[0, 0, 0, 0] * 100, r[-1, 0, 0, 0] * 100
+ymin, ymax = r[0, 0, 0, 1] * 100, r[0, -1, 0, 1] * 100
+fig = plt.figure(figsize=(10, 10))
+ax = fig.gca()
+plt.imshow(np.abs(P[0][:, :, np.int(np.floor(N/2))].T),
+           extent=[xmin, xmax, ymin, ymax],
+           cmap=plt.cm.get_cmap('viridis'))#, interpolation='spline16')
+plt.xlabel(r'$x$ (cm)')
+plt.ylabel(r'$y$ (cm)')
+cbar = plt.colorbar()
+cbar.ax.set_ylabel('Pressure (MPa)')
+fig.savefig('results/H101_scatter.png')
 plt.close()

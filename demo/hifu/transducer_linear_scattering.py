@@ -78,7 +78,7 @@ print('Size parameter = ', np.real(k1) * radius)
 
 
 # Define the resolution of the voxel mesh - this is given in terms of number
-# of voxels per wavelength. 10 voxels per wavelength typically gives a
+# of voxels per wavelength. 5-10 voxels per wavelength typically gives a
 # reasonable (<5%) accuracy. See demo_convergence.py for an example script in
 # which the convergence of the scheme is considered w.r.t. mesh resolution
 nPerLam = 4
