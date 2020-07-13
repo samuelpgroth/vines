@@ -171,6 +171,14 @@ for i_harm in range(1, n_harm):
         # Fifth harmonic
         xIn = -25 * beta * omega**2 / (rho * c**4) * \
             (P[0] * P[3] + P[1] * P[2])
+    elif i_harm == 5:
+        # Sixth harmonic
+        xIn = -18 * beta * omega**2 / (rho * c**4) * \
+            (2 * P[0] * P[4] + 2 * P[1] * P[3] + P[2]**2)
+    elif i_harm == 6:
+        # Seventh harmonic
+        xIn = -49 * beta * omega**2 / (rho * c**4) * \
+            (P[0] * P[5] + P[1] * P[4] + P[2] * P[3])
 
     xInVec = xIn.reshape((L*M*N, 1), order='F')
     idx = np.ones((L, M, N), dtype=bool)
