@@ -21,9 +21,11 @@ from vines.operators.acoustic_operators import volume_potential
 from vines.precondition.threeD import circulant_embed_fftw
 from vines.operators.acoustic_matvecs import mvp_vec_fftw, mvp_domain, mvp_potential_x_perm
 from scipy.sparse.linalg import LinearOperator, gmres
-from vines.mie_series_function import mie_function
+from vines.mie_series_function import mie_function, mie_function_density_contrast
 from matplotlib import pyplot as plt
 import matplotlib
+from mpl_toolkits.mplot3d import Axes3D 
+from plotting import set_axes_equal
 import time
 
 '''                         Define parameters                               '''
@@ -32,7 +34,7 @@ import time
 # travelling in the positive x-direction
 # * Sphere info
 geom = 'sphere'
-radius = 5e-3
+radius = 2.5e-3
 refInd = 1.2 + 1j * 0.0
 # * Wavelength
 lambda_ext = 1.5e-3
@@ -56,6 +58,31 @@ r, idx, res, P, lambda_int = shape(geom, refInd, lambda_ext, radius,
                                    nPerLam, 1)
 
 (L, M, N) = r.shape[0:3]  # number of voxels in x-, y-, z-directions
+
+# Plot geometry
+
+(L, M, N, _) = r.shape  # number of voxels in x-, y-, z-directions
+#  Arrays containing the x, y, z coordinates, these are handy for plotting the geometry
+xd = r[:, :, :, 0]
+yd = r[:, :, :, 1]
+zd = r[:, :, :, 2]
+
+matplotlib.rcParams.update({'font.size': 20})
+plt.rc('text', usetex=True)
+plt.rc('font', family='serif')
+fig = plt.figure(figsize=(12, 8))
+ax = fig.gca(projection='3d')
+# ax.set_aspect('equal')
+
+ax.scatter(xd[idx], yd[idx], zd[idx])
+
+ax.set_xlabel('$x$')
+ax.set_ylabel('$y$')
+ax.set_zlabel('$z$')
+set_axes_equal(ax)
+fig.savefig('results/sphere_voxels.pdf')
+plt.close()
+
 
 # Get plane wave incident field
 Uinc = PlaneWave(Ao, ko, direction, r)
@@ -104,7 +131,8 @@ print('Solve time = ', end-start, 's')
 J = sol.reshape(L, M, N, order='F')
 
 # Get the analytical solution for comparison
-P = mie_function(ko * radius, refInd, L)
+# P = mie_function(ko * radius, refInd, L)
+P = mie_function_density_contrast(ko * radius, refInd, L, 1, 0.9)
 
 idx_n = np.ones((L, M, N), dtype=bool)
 

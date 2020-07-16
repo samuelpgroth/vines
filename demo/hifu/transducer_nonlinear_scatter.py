@@ -187,13 +187,6 @@ P_sca[0] = mvp_potential_x_perm(J_domain.reshape((L*M*N, 1), order='F'),
 
 P[0] = P_inc[0] + P_sca[0]
 
-# exit()
-
-# FOR LATER, when we incorporate density variation
-# from findiff import FinDiff
-# d_dx = FinDiff(0, dx)
-# d_dy = FinDiff(1, dx), and sim for d_dz
-# dMr_dx = d_dx(Mr), etc.
 
 ny_centre = np.int(np.floor(M/2))
 nz_centre = np.int(np.floor(N/2))

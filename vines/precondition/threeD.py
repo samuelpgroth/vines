@@ -112,3 +112,36 @@ def circulant_embed_fftw(toep, L, M, N):
     # FFT of circulant operator
     circ_op = pyfftw.interfaces.numpy_fft.fftn(circ)
     return circ_op
+
+
+def fftw_operator(A):
+    import numpy as np
+    import pyfftw, multiprocessing
+    pyfftw.config.NUM_THREADS = multiprocessing.cpu_count()
+    L, M, N, d = A.shape
+    fA = np.zeros((L, M, N, d), dtype=np.complex128)
+    # 3D-FFT of A
+    for p in range(0, d):
+        fA[:, :, :, p] = pyfftw.interfaces.numpy_fft.fftn(A[:, :, :, p])
+
+    return fA
+
+
+def circulant_gradient_embed(toep, L, M, N):
+    import numpy as np
+    # Circulant embedding
+    circ = np.zeros((2 * L, 2 * M, 2 * N, 3), dtype=np.complex128)
+
+    for i in range(0, 3):
+        circ[0:L, 0:M, 0:N, i] = toep[:, :, :, i]
+        circ[0:L, 0:M, N+1:2*N, i] = toep[0:L, 0:M, -1:0:-1, i]
+        circ[0:L, M+1:2*M, 0:N, i] = toep[0:L, -1:0:-1, 0:N, i]
+        circ[0:L, M+1:2*M, N+1:2*N, i] = toep[0:L, -1:0:-1, -1:0:-1, i]
+        circ[L+1:2*L, 0:M, 0:N, i] = toep[-1:0:-1, 0:M, 0:N, i]
+        circ[L+1:2*L, 0:M, N+1:2*N, i] = toep[-1:0:-1, 0:M, -1:0:-1, i]
+        circ[L+1:2*L, M+1:2*M, 0:N, i] = toep[-1:0:-1, -1:0:-1, 0:N, i]
+        circ[L+1:2*L, M+1:2*M, N+1:2*N, i] = toep[-1:0:-1, -1:0:-1, -1:0:-1, i]
+
+    # FFT of circulant operator
+    circ_op = fftw_operator(circ)
+    return circ_op

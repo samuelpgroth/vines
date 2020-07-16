@@ -267,7 +267,6 @@ mvp_prec = lambda x: mvp_circ(x, circ_inv, M, N, IDX[:, 0])
 #     temp = np.zeros((M*N, 1), dtype=np.complex128)
 #     temp[i] = 1.0
 #     circ_mat[:, i] = mvp_prec(temp)[:, 0]
-    
 
 
 prec = LinearOperator((M*N, M*N), matvec=mvp_prec)
@@ -360,8 +359,9 @@ plt.imshow(np.real(E_tot.T), extent=[-wx/2,wx/2,-wy/2,wy/2],
            cmap=plt.cm.get_cmap('viridis'), interpolation='spline16')
 plt.xlabel('x')
 plt.ylabel('y')
-# circle2 = plt.Circle((0., 0.), rad, color='black', fill=False)
-# ax.add_artist(circle2)
+circle2 = plt.Circle((0., 0.), rad, color='black', fill=False,
+                     linestyle=':')
+ax.add_artist(circle2)
 plt.colorbar()
 
 fig.savefig('results/circle.pdf')
