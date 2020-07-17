@@ -144,7 +144,7 @@ plt.xlabel(r'$x$ (cm)')
 plt.ylabel(r'$y$ (cm)')
 cbar = plt.colorbar()
 cbar.ax.set_ylabel('Pressure (MPa)')
-fig.savefig('results/H102.png')
+fig.savefig('results/H142.png')
 plt.close()
 
 
@@ -205,7 +205,7 @@ def convergence_domain_size(f_rhs, mvp, circ_op, r, L, M, N, harm, roc, k1):
 
     import pickle
     # filename = 'results/pierre_scale0p6_liver.pickle'
-    filename = 'results/H102_water_harmonic' + str(harm) + '.pickle'
+    filename = 'results/H142_water_harmonic' + str(harm) + '.pickle'
     with open(filename, 'wb') as f:
         pickle.dump([line_harmonic, TOL, xMinVals, xMaxVals, yMinVals,
                      yMaxVals, roc, np.real(k1)], f)
@@ -274,12 +274,12 @@ plt.xlim([x_start*100, x_end*100])
 plt.ylim([0, np.ceil(np.max(np.abs(P[0, :, ny_centre, nz_centre])/1e6))])
 plt.xlabel(r'Axial distance (cm)')
 plt.ylabel(r'Pressure (MPa)')
-fig.savefig('results/H102_harms_axis.pdf')
+fig.savefig('results/H142_harms_axis.pdf')
 plt.close()
 
 
 # Save first harmonic along central axis
 import pickle
-filename = 'results/H102_water_harmonic1.pickle'
+filename = 'results/H142_water_harmonic1.pickle'
 with open(filename, 'wb') as f:
     pickle.dump([P[0, :, ny_centre, nz_centre], x_line], f)
