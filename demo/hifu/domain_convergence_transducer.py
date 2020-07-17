@@ -132,7 +132,7 @@ P[0] = p.reshape(L, M, N, order='F')
 # Create a pretty plot of the first harmonic in the domain
 matplotlib.rcParams.update({'font.size': 22})
 plt.rc('font', family='serif')
-plt.rc('text', usetex=True)
+# plt.rc('text', usetex=True)
 xmin, xmax = r[0, 0, 0, 0] * 100, r[-1, 0, 0, 0] * 100
 ymin, ymax = r[0, 0, 0, 1] * 100, r[0, -1, 0, 1] * 100
 fig = plt.figure(figsize=(10, 10))
