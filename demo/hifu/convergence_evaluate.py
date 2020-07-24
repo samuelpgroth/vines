@@ -6,6 +6,10 @@ import matplotlib
 import matplotlib.pyplot as plt
 import itertools
 
+# Name of transducer
+transducer_name = 'H102'
+power = 100
+
 # How many harmonics have been computed
 n_harms = 5
 
@@ -18,7 +22,11 @@ fig = plt.figure(figsize=(14, 8))
 ax = fig.gca()
 marker = itertools.cycle(('ko-', 'rs-', 'd-', 'x-', '*-'))
 
-filename = 'results/H101_water_harmonic1.pickle'
+# filename = 'results/Pierre_H101_water_harmonic1.pickle'
+# filename = 'results/H101_water_harmonic1.pickle'
+filename = 'results/' + transducer_name + '_power' + str(power) + \
+            '_water_harmonic1.pickle'
+
 with open(filename, 'rb') as f:
     bits = pickle.load(f)
 
@@ -31,7 +39,10 @@ total_snip += total
 
 for i_harm in range(0, n_harms - 1):
     # Load pickle file
-    filename = 'results/H101_water_harmonic' + str(i_harm+2) + '.pickle'
+    # filename = 'results/H101_water_harmonic' + str(i_harm+2) + '.pickle'
+    # filename = 'results/Pierre_H101_water_harmonic' + str(i_harm+2) + '.pickle'
+    filename = 'results/' + transducer_name + '_power' + str(power) + \
+            '_water_harmonic' + str(i_harm + 2) + '.pickle'
 
     with open(filename, 'rb') as f:
         VARS = pickle.load(f)
@@ -50,6 +61,8 @@ for i_harm in range(0, n_harms - 1):
     yMinVals = VARS[4]
     yMaxVals = VARS[5]
     roc = VARS[6]
+
+    print('ROC = ', roc)
     k1 = VARS[7]
     lam = 2 * np.pi / k1
 
@@ -70,12 +83,13 @@ for i_harm in range(0, n_harms - 1):
         # if TOL[i] <2e-3:
             if (count == 0):
                 count += 1
+                print(i)
                 print('HARMONIC ',i_harm+2)
                 print('x coord of left edge of box:', xMinVals[i]) 
                 print('y coord of base of box:', yMinVals[i])
                 lammy = lam / (i_harm + 2)
-                print('x dist in wavelengths: ', (roc - xMinVals[i]) / lammy)
-                print('y dist in wavelengths: ', (0 - yMinVals[i]) / lammy)
+                print('x dist in wavelengths: ', (roc - xMinVals[i]) / lam)
+                print('y dist in wavelengths: ', (0 - yMinVals[i]) / lam)
                 total_snip += line[i, :]
 
 
@@ -102,9 +116,12 @@ plt.rc('text', usetex=True)
 fig = plt.figure(figsize=(14, 8))
 ax = fig.gca()
 
-for i_harm in range(0, n_harms - 1):
+for i_harm in range(0, n_harms):
     # Load pickle file
-    filename = 'results/H101_water_harmonic' + str(i_harm+2) + '.pickle'
+    # filename = 'results/Pierre_H101_water_harmonic' + str(i_harm+1) + '.pickle'
+    # filename = 'results/H101_water_harmonic' + str(i_harm+2) + '.pickle'
+    filename = 'results/' + transducer_name + '_power' + str(power) + \
+            '_water_harmonic' + str(i_harm + 1) + '.pickle'
 
     with open(filename, 'rb') as f:
         VARS = pickle.load(f)
@@ -112,8 +129,12 @@ for i_harm in range(0, n_harms - 1):
 
     # Field along the central axis line
     line = VARS[0]
-
-    plt.plot(x_line*100, np.abs(line[10, :]))
+    # from IPython import embed; embed()
+    if (i_harm == 0):
+        plt.plot(x_line, np.abs(line))
+    else:
+        plt.plot(x_line, np.abs(line[-1, :]))
+    # plt.plot(x_line, np.abs(line[10, :]))
 
 fig.savefig('results/harms.png')
 plt.close()
@@ -125,7 +146,10 @@ ax = fig.gca()
 
 for i_harm in range(0, 1):
     # Load pickle file
-    filename = 'results/H101_water_harmonic' + str(i_harm+2) + '.pickle'
+    # filename = 'results/Pierre_H101_water_harmonic' + str(i_harm+2) + '.pickle'
+    # filename = 'results/H101_water_harmonic' + str(i_harm+2) + '.pickle'
+    filename = 'results/' + transducer_name + '_power' + str(power) + \
+            '_water_harmonic' + str(i_harm + 2) + '.pickle'
 
     with open(filename, 'rb') as f:
         VARS = pickle.load(f)
@@ -144,8 +168,8 @@ plt.close()
 fig = plt.figure(figsize=(14, 8))
 ax = fig.gca()
 
-plt.plot(x_line, np.abs(total_snip))
-plt.plot(x_line, np.abs(total))
+# plt.plot(x_line, np.real(total_snip))
+plt.plot(x_line[600:], np.real(total[600:]))
 fig.savefig('results/total.png')
 plt.close()
 

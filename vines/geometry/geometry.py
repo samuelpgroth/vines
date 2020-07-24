@@ -42,6 +42,39 @@ def grid3d(x, y, z):
     return r, L, M, N
 
 
+def generatedomain2d(res, dx, dy):
+    # Get minimum number of voxels in each direction
+    nx = np.int(np.max((1.0, np.round(dx / res))))
+    ny = np.int(np.max((1.0, np.round(dy / res))))
+
+    Dx = nx * res
+    Dy = ny * res
+
+    x = np.arange(0.0, Dx, res) + (-Dx / 2 + res/2)
+    y = np.arange(0.0, Dy, res) + (-Dy / 2 + res/2)
+
+    r, L, M = grid2d(x, y)
+    return r, L, M
+
+
+@njit(parallel=True)
+def grid2d(x, y):
+    # define the dimensions
+    L = x.shape[0]
+    M = y.shape[0]
+
+    # allocate space
+    r = np.zeros((L, M, 2))
+
+    for ix in prange(0, L):
+        xx = x[ix]
+        for iy in range(0, M):
+            yy = y[iy]
+            r[ix, iy, :] = np.array((xx, yy))
+
+    return r, L, M
+
+
 def koch_snowflake(order, scale=1):
     """
     Return two lists x, y of point coordinates of the Koch snowflake.

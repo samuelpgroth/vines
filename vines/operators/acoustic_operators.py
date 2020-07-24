@@ -66,6 +66,73 @@ def volume_potential(ko, r):
     return potential_fast(ko)
 
 
+def volume_potential_cylindrical(ko, r):
+    ''' Create Toeplitz operator for cylindrically symmetric case '''
+    (L, M, N, _) = r.shape
+    dx = r[1, 0, 0, 0] - r[0, 0, 0, 0]
+    vol = (dx)**3  # voxel volume
+    a = (3/4 * vol / np.pi)**(1/3)  # radius of sphere of same volume
+    R0 = r[0, 0, 0, :]
+
+    # self = (1/ko**2 - 1j*a/ko) * np.exp(1j*ko*a) - 1/ko**2
+    self = 1/(2j*ko) * (np.exp(1j*ko*a) - 1)
+
+    # @njit(parallel=True)
+    # def potential_fast_cylindrical(ko):
+    #     toep = np.zeros((L, M, N), dtype=np.complex128)
+    #     for i in prange(0, L):
+    #         for j in range(0, M):
+    #             for k in range(0, N):
+    #                 R1 = r[i, j, k, :]
+    #                 rk_to_rj = R1-R0
+    #                 rjk = np.linalg.norm(rk_to_rj)
+
+    #                 if np.abs(rjk) > 1e-15:
+    #                     # toep[i, j, k] = np.exp(1j * ko * rjk) / \
+    #                     #     (4 * np.pi * rjk) * dx**2 * np.abs(R1[1])
+    #                     toep[i, j, k] = np.exp(1j * ko * rjk) / \
+    #                         (4 * np.pi * rjk) * dx**2
+    #                 else:
+    #                     toep[i, j, k] = self
+    #     return toep
+
+    @njit(parallel=True)
+    def potential_fast_cylindrical(ko):
+        ntheta = 400
+        dtheta = 2*np.pi / ntheta
+        # theta = np.linspace(dtheta/2, np.pi - dtheta/2, ntheta)
+        theta = np.linspace(0, 2*np.pi - dtheta, ntheta)
+        # theta = 0
+        toep = np.zeros((L, M, N), dtype=np.complex128)
+        for i in prange(0, L):
+            for j in range(0, M):
+                for k in range(0, N):
+                    temp = 0
+                    for THETA in theta:
+                        R1_temp = r[i, j, k, :]
+                        R1 = np.array([R1_temp[0],
+                                       R1_temp[1] * np.cos(THETA),
+                                       R1_temp[1] * np.sin(THETA)])
+                        # R1 = np.array([R1_temp[0],
+                        #                R1_temp[1],
+                        #                np.abs(R1_temp[1]) * np.sin(THETA)])
+                        # R1 = r[i, j, k, :]
+                        rk_to_rj = R1-R0
+                        rjk = np.linalg.norm(rk_to_rj)
+
+                        if np.abs(rjk) > 1e-15:
+                            # toep[i, j, k] = np.exp(1j * ko * rjk) / \
+                            #     (4 * np.pi * rjk) * dx**2 * np.abs(R1[1])
+                            temp += np.exp(1j * ko * rjk) / \
+                                (4 * np.pi * rjk) * dx**2
+                        else:
+                            temp += self
+                    toep[i, j, k] = temp * dtheta  #* np.abs(R1_temp[1])
+        return toep
+
+    return potential_fast_cylindrical(ko)
+
+
 def grad_potential(ko, r):
     ''' Create Toeplitz operator '''
     (L, M, N, _) = r.shape

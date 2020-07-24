@@ -22,22 +22,18 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../../'))
 import numpy as np
 from vines.geometry.geometry import shape
 from vines.fields.plane_wave import PlaneWave
-from vines.operators.acoustic_operators import volume_potential
+from vines.operators.acoustic_operators import volume_potential, volume_potential_cylindrical
 from vines.precondition.threeD import circulant_embed_fftw
 from vines.operators.acoustic_matvecs import mvp_volume_potential, mvp_vec_fftw
 from scipy.sparse.linalg import LinearOperator, gmres
 from vines.mie_series_function import mie_function
 from matplotlib import pyplot as plt
-from vines.geometry.geometry import generatedomain
+from vines.geometry.geometry import generatedomain2d, generatedomain
 from vines.fields.transducers import bowl_transducer, normalise_power
 import time
 import matplotlib
 from matplotlib import pyplot as plt
 import itertools
-from scipy.interpolate import RegularGridInterpolator
-
-# If latex is installed, can use its fonts in plots, else set to 0
-if_latex = 1
 
 '''                        Define medium parameters                         '''
 # * speed of sound (c)
@@ -64,11 +60,9 @@ def attenuation(f, alpha0, eta):
 # * outer diameter (outer_D)
 # * total acoustic power (power)
 f1 = 1.1e6
-# roc = 0.0632
-roc = 0.03
+roc = 0.0632
 inner_D = 0.0
-# outer_D = 0.064
-outer_D = 0.03
+outer_D = 0.064
 power = 50
 # FIXME: don't need to define focus location but perhaps handy for clarity?
 focus = [roc, 0., 0.]
@@ -96,19 +90,26 @@ dx = lam / nPerLam
 # x_end can be just beyond the focus
 # the width in the y,z directions should be around the width of outer_D,
 # but you can shrink this to speed up computations if required
-x_start = 0.01
+x_start = 0.001
 x_end = roc + 0.01
 wx = x_end - x_start
-wy = outer_D * 0.8
-wz = wy
+wy = outer_D*0.5
+wz = wy/1000
+# wz = wy
 
 start = time.time()
+# r, L, M = generatedomain2d(dx, wx, wy)
 r, L, M, N = generatedomain(dx, wx, wy, wz)
-# Adjust r
+
+# Adjust r by shifting x locations
 r[:, :, :, 0] = r[:, :, :, 0] - r[0, 0, 0, 0] + x_start
+r[:, :, :, 1] = r[:, :, :, 1] - r[0, 0, 0, 1]
 end = time.time()
 print('Mesh generation time:', end-start)
 points = r.reshape(L*M*N, 3, order='F')
+
+# from IPython import embed; embed()
+
 
 print('Number of voxels = ', L*M*N)
 
@@ -135,8 +136,7 @@ P[0] = p.reshape(L, M, N, order='F')
 # Create a pretty plot of the first harmonic in the domain
 matplotlib.rcParams.update({'font.size': 22})
 plt.rc('font', family='serif')
-if if_latex == 1:
-    plt.rc('text', usetex=True)
+plt.rc('text', usetex=True)
 xmin, xmax = r[0, 0, 0, 0] * 100, r[-1, 0, 0, 0] * 100
 ymin, ymax = r[0, 0, 0, 1] * 100, r[0, -1, 0, 1] * 100
 fig = plt.figure(figsize=(10, 10))
@@ -148,7 +148,7 @@ plt.xlabel(r'$x$ (cm)')
 plt.ylabel(r'$y$ (cm)')
 cbar = plt.colorbar()
 cbar.ax.set_ylabel('Pressure (MPa)')
-fig.savefig('results/H101.png')
+fig.savefig('results/test.png')
 plt.close()
 
 '''      Compute the next harmonics by evaluating the volume potential      '''
@@ -158,7 +158,7 @@ for i_harm in range(1, n_harm):
 
     # Assemble volume potential Toeplitz operator perform circulant embedding
     start = time.time()
-    toep_op = volume_potential(k2, r)
+    toep_op = volume_potential_cylindrical(k2, r)
 
     circ_op = circulant_embed_fftw(toep_op, L, M, N)
     end = time.time()
@@ -167,26 +167,26 @@ for i_harm in range(1, n_harm):
     # Create vector for matrix-vector product
     if i_harm == 1:
         # Second harmonic
-        xIn = -2 * beta * omega**2 / (rho * c**4) * P[0] * P[0]
+        xIn = -2 * beta * omega**2 / (rho * c**4) * P[0] * P[0] * np.abs(r[:, :, :, 1])# * 2 * np.pi
     elif i_harm == 2:
         # Third harmonic
-        xIn = -9 * beta * omega**2 / (rho * c**4) * P[0] * P[1]
+        xIn = -9 * beta * omega**2 / (rho * c**4) * P[0] * P[1]* np.abs(r[:, :, :, 1]) #* np.pi
     elif i_harm == 3:
         # Fourth harmonic
         xIn = -8 * beta * omega**2 / (rho * c**4) * \
-            (P[1] * P[1] + 2 * P[0] * P[2])
+            (P[1] * P[1] + 2 * P[0] * P[2])* np.abs(r[:, :, :, 1]) * np.pi
     elif i_harm == 4:
         # Fifth harmonic
         xIn = -25 * beta * omega**2 / (rho * c**4) * \
-            (P[0] * P[3] + P[1] * P[2])
+            (P[0] * P[3] + P[1] * P[2])* np.abs(r[:, :, :, 1]) * np.pi
     elif i_harm == 5:
         # Sixth harmonic
         xIn = -18 * beta * omega**2 / (rho * c**4) * \
-            (2 * P[0] * P[4] + 2 * P[1] * P[3] + P[2]**2)
+            (2 * P[0] * P[4] + 2 * P[1] * P[3] + P[2]**2)* np.abs(r[:, :, :, 1]) * np.pi
     elif i_harm == 6:
         # Seventh harmonic
         xIn = -49 * beta * omega**2 / (rho * c**4) * \
-            (P[0] * P[5] + P[1] * P[4] + P[2] * P[3])
+            (P[0] * P[5] + P[1] * P[4] + P[2] * P[3])* np.abs(r[:, :, :, 1]) * np.pi
 
     xInVec = xIn.reshape((L*M*N, 1), order='F')
     idx = np.ones((L, M, N), dtype=bool)
@@ -204,41 +204,60 @@ for i_harm in range(1, n_harm):
     end = time.time()
     print('MVP time = ', end - start)
 
-'''                 Plot harmonics along central axis                       '''
-# Array of points along central axis
-n_line = L-2
-x_axis = np.linspace(x_start+dx, x_end-dx, n_line)
-points_axis = np.vstack((x_axis, np.zeros(n_line), np.zeros(n_line)))
+# f2 = 2 * f1
+# k2 = 2 * np.pi * f2 / c + 1j * attenuation(f2, alpha0, eta)
 
-# x, y, z coordinates of grid, required for grid interpolator
-X = r[:, 0, 0, 0]
-Y = r[0, :, 0, 1]
-Z = r[0, 0, :, 2]
+# # Assemble volume potential Toeplitz operator perform circulant embedding
+# start = time.time()
+# toep_op = volume_potential_cylindrical(k2, r)
+# # toep_op = volume_potential(k2, r)
 
-# Establish line styles
-# marker = itertools.cycle(('k-', 'r-', 'd-', 'x-', '*-', '+-'))
-# ny_centre = np.int(np.floor(M/2))
-# nz_centre = np.int(np.floor(N/2))
-# x_line = (r[:, ny_centre, nz_centre, 0]) * 100
-fig = plt.figure(figsize=(14, 8))
-ax = fig.gca()
+# circ_op = circulant_embed_fftw(toep_op, L, M, N)
+# end = time.time()
+# print('Operator assembly and its circulant embedding:', end-start)
 
-for i_harm in range(n_harm):
-    # Set up interpolation function
-    interp_fun = RegularGridInterpolator((X, Y, Z), P[i_harm],
-                                         method='nearest')
-    field_interp = interp_fun(points_axis.T)
-    plt.plot(x_axis * 100, np.abs(field_interp)/1e6)
-    if i_harm == 0:
-        max_value = np.max(np.abs(field_interp))
+# # Second harmonic
+# # xIn = -2 * beta * omega**2 / (rho * c**4) * P * P
 
-plt.grid(True)
-plt.xlim([x_start*100, x_end*100])
-plt.ylim([0, np.ceil(max_value / 1e6)])
-plt.xlabel(r'Axial distance (cm)')
-plt.ylabel(r'Pressure (MPa)')
-fig.savefig('results/H101_harms_axis.pdf')
-plt.close()
+# xIn = -2 * beta * omega**2 / (rho * c**4) * P[0] * P[0] * np.abs(r[:, :, :, 1]) * np.pi
+
+
+# xInVec = xIn.reshape((L*M*N, 1), order='F')
+# idx = np.ones((L, M, N), dtype=bool)
+
+# def mvp(x):
+#     'Matrix-vector product operator'
+#     return mvp_volume_potential(x, circ_op, idx, Mr)
+
+# # Voxel permittivities
+# Mr = np.ones((L, M, N), dtype=np.complex128)
+
+# # Perform matrix-vector product
+# start = time.time()
+# P[1] = mvp(xInVec).reshape(L, M, N, order='F')
+# end = time.time()
+# print('MVP time = ', end - start)
+# from IPython import embed; embed()
+
+
+# Now evaluate the volume potential for points along central axis
+dA = dx**2  # element of area
+# Central axis line
+x_line = r[:, 0, 0, :] - np.array([0, dx/2, 0])
+
+# k2 = k1 * 2
+
+# integral = np.zeros(L, dtype=np.complex128)
+# for i in range(L):
+#     R0 = x_line[i, :]
+#     ri_to_rk = r[:, :, 0, :] - R0
+#     dist = np.linalg.norm(ri_to_rk) 
+#     dist = np.sqrt(ri_to_rk[:,:,0]**2 + ri_to_rk[:,:,1]**2 + ri_to_rk[:,:,2]**2)
+#     integrand = np.exp(1j * k2 * dist) / (4 * np.pi * dist) * \
+#                 r[:, :, 0, 1] * P[:, :, 0]**2
+#     integral[i] = -2 * beta * omega**2 / (rho * c**4) * 2 * np.pi * \
+#                 np.sum(integrand) * dA
+
 
 
 # Create a pretty plot of the first harmonic in the domain
@@ -256,5 +275,25 @@ plt.xlabel(r'$x$ (cm)')
 plt.ylabel(r'$y$ (cm)')
 cbar = plt.colorbar()
 cbar.ax.set_ylabel('Pressure (MPa)')
-fig.savefig('results/H101_harm2.png')
+fig.savefig('results/test1.png')
 plt.close()
+
+# marker = itertools.cycle(('ko-', 'rs-', 'd-', 'x-', '*-', '+-'))
+ny_centre = np.int(np.floor(M/2))
+nz_centre = np.int(np.floor(N/2))
+x_line = (r[:, ny_centre, nz_centre, 0]) * 100
+fig = plt.figure(figsize=(14, 8))
+ax = fig.gca()
+for i_harm in range(n_harm):
+    # plt.plot(x_line, np.abs(P[i_harm, :, ny_centre, nz_centre])/1e6)
+    plt.plot(x_line, np.abs(P[i_harm, :, 0, 0])/1e6)
+# plt.plot(x_line, np.abs(P1[:, ny_centre, nz_centre])/1e6, 'r-')
+plt.grid(True)
+plt.xlim([x_start*100, x_end*100])
+plt.ylim([0, 8])
+plt.xlabel(r'Axial distance (cm)')
+plt.ylabel(r'Pressure (MPa)')
+fig.savefig('results/test2.png')
+plt.close()
+
+

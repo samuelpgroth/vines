@@ -66,6 +66,7 @@ roc = 0.104
 inner_D = 0.04
 # outer_D = 0.064
 outer_D = 0.104
+transducername = 'H142'
 power = 50
 # FIXME: don't need to define focus location but perhaps handy for clarity?
 focus = [roc, 0., 0.]
@@ -144,7 +145,8 @@ plt.xlabel(r'$x$ (cm)')
 plt.ylabel(r'$y$ (cm)')
 cbar = plt.colorbar()
 cbar.ax.set_ylabel('Pressure (MPa)')
-fig.savefig('results/H142.png')
+filename = 'results/' + transducername + '_power' + str(power) + '.png'
+fig.savefig('filename')
 plt.close()
 
 
@@ -204,8 +206,8 @@ def convergence_domain_size(f_rhs, mvp, circ_op, r, L, M, N, harm, roc, k1):
         line_harmonic[i_tol, :] = line
 
     import pickle
-    # filename = 'results/pierre_scale0p6_liver.pickle'
-    filename = 'results/H142_water_harmonic' + str(harm) + '.pickle'
+    filename = 'results/' + transducername + '_power' + str(power) + \
+        '_water_harmonic' + str(harm) + '.pickle'
     with open(filename, 'wb') as f:
         pickle.dump([line_harmonic, TOL, xMinVals, xMaxVals, yMinVals,
                      yMaxVals, roc, np.real(k1)], f)
@@ -274,12 +276,15 @@ plt.xlim([x_start*100, x_end*100])
 plt.ylim([0, np.ceil(np.max(np.abs(P[0, :, ny_centre, nz_centre])/1e6))])
 plt.xlabel(r'Axial distance (cm)')
 plt.ylabel(r'Pressure (MPa)')
-fig.savefig('results/H142_harms_axis.pdf')
+filename = 'results/' + transducername + '_power' + str(power) + \
+        '_water_harms_axis.pdf'
+fig.savefig(filename)
 plt.close()
 
 
 # Save first harmonic along central axis
 import pickle
-filename = 'results/H142_water_harmonic1.pickle'
+filename = 'results/' + transducername + '_power' + str(power) + \
+        '_water_harmonic1' + '.pickle'
 with open(filename, 'wb') as f:
     pickle.dump([P[0, :, ny_centre, nz_centre], x_line], f)
