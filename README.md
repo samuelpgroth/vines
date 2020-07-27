@@ -11,6 +11,14 @@ The particular scattering scenarios considered in this suite are the following:
 * Acoustic scattering by simple shapes (2D) and (3D)
 * High-intensity focused ultrasound in the body
 
+## Dependencies
+These Python libraries are required to run VINES:
+* numba
+* pyfftw
+* numpy
+* pickle-mixin
+* matplotlib
+
 ## To do list
 * Complete transducer_nonlinear_scatter.py 
 * Include second operator to account for smooth density contrast using
