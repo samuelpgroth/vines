@@ -207,6 +207,14 @@ def shape(geom, refInd, lambda_ext, radius, nPerLam, aspectRatio):
         dom_y = dom_x
         dom_z = dom_x
         P = []  # vertices leave blank
+    elif geom in 'ellipsoid':
+        a = radius[0]
+        b = radius[1]
+        c = radius[2]
+        dom_x = 2 * a
+        dom_y = 2 * b
+        dom_z = 2 * c
+        P = []  # vertices leave blank
 
     # lambda_ext = 2 * np.pi * a / sizeParam     # exterior wavelength
     lambda_int = lambda_ext / np.real(refInd)  # interior wavelength
@@ -224,6 +232,10 @@ def shape(geom, refInd, lambda_ext, radius, nPerLam, aspectRatio):
         r_sq = r[:, :, :, 0]**2 + r[:, :, :, 1]**2 + r[:, :, :, 2]**2
         idx = (r_sq <= a**2)
         # from IPython import embed; embed()
+    elif geom in 'ellipsoid':
+        r_el = (r[:, :, :, 0] / a)**2 + (r[:, :, :, 1] / b)**2 + \
+               (r[:, :, :, 2] / c)**2
+        idx = (r_el <= 1)
     else:
         # Polyhedron
         points = r[:, :, :, 0:2].reshape(L*M*N, 2, order='F')

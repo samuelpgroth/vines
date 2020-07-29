@@ -189,20 +189,28 @@ plt.close()
 
 
 # Create a bigger grid over which we evaluate the total field
-from  IPython import embed; embed()
 dx = res
-wx = max(r[:, 0, 0, 0]) - min(r[:, 0, 0, 0]) + dx
-wy = max(r[0, :, 0, 1]) - min(r[0, :, 0, 1]) + dx
-wz = max(r[0, 0, :, 2]) - min(r[0, 0, :, 2]) + dx
+wx = max(r[:, 0, 0, 0]) - min(r[:, 0, 0, 0]) + 4 * dx
+wy = max(r[0, :, 0, 1]) - min(r[0, :, 0, 1]) + 4 * dx
+wz = max(r[0, 0, :, 2]) - min(r[0, 0, :, 2]) + 4 * dx
 # embed()
 
 start = time.time()
 from vines.geometry.geometry import generatedomain, grid3d
 r_b, L_b, M_b, N_b = generatedomain(dx, wx, wy, wz)
-r_b[:, :, :, 0] = r_b[:, :, :, 0] + scat_loc[0]
+# r_b[:, :, :, 0] = r_b[:, :, :, 0] + scat_loc[0]
 # Adjust r
-r[:, :, :, 0] = r[:, :, :, 0] - r[0, 0, 0, 0] + x_start
-end = time.time()
-print('Mesh generation time:', end-start)
+# r[:, :, :, 0] = r[:, :, :, 0] - r[0, 0, 0, 0] + x_start
+# end = time.time()
+# print('Mesh generation time:', end-start)
 # embed()
-points = r.reshape(L*M*N, 3, order='F')
+
+from IPython import embed; embed()
+
+# Find the indices of the voxels within the sphere
+r_sq = r_b[:, :, :, 0]**2 + r_b[:, :, :, 1]**2 + r_b[:, :, :, 2]**2
+idx_b = (r_sq <= radius**2)
+
+r_b[:, :, :, 0] = r_b[:, :, :, 0] + scat_loc[0]
+
+points_b = r_b.reshape(L_b*M_b*N_b, 3, order='F')

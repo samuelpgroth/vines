@@ -73,7 +73,7 @@ focus = [roc, 0., 0.]
 geom = 'sphere'
 radius = 10e-3
 refInd = 1.07 + 1j * 0.0  # defined as k_int / k_ext FIXME:CHECK
-location = [roc - 0.02, 0., 0.]
+location = [roc - 0.02, 0., 0.]  # centre of scatterer
 
 # Compute useful quantities: wavelength (lam), wavenumber (k0),
 # angular frequency (omega)

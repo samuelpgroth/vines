@@ -122,7 +122,7 @@ def residual_vector(rk):
 # Iterative solve with GMRES (could equally use BiCG-Stab, for example)
 start = time.time()
 resvec = []
-sol, info = gmres(A, xInVec, tol=1e-4, callback=residual_vector)
+sol, info = gmres(A, xInVec, tol=1e-5, callback=residual_vector)
 print("The linear system was solved in {0} iterations".format(len(resvec)))
 end = time.time()
 print('Solve time = ', end-start, 's')
@@ -132,13 +132,14 @@ J = sol.reshape(L, M, N, order='F')
 
 # Get the analytical solution for comparison
 # P = mie_function(ko * radius, refInd, L)
-P = mie_function_density_contrast(ko * radius, refInd, L, 1, 0.9)
+P = mie_function_density_contrast(ko * radius, refInd, L, 1, 1)
 
 idx_n = np.ones((L, M, N), dtype=bool)
 
 # Utemp = mvp_domain(sol, circ_op, idx_n, Mr).reshape(L, M, N, order='F')
 # U = Uinc - Utemp + J
-Utemp = mvp_potential_x_perm(sol, circ_op, idx_n, Mr).reshape(L, M, N, order='F')
+Utemp = mvp_potential_x_perm(sol, circ_op, idx_n, Mr).reshape(L, M, N,
+                                                              order='F')
 U = Uinc + Utemp
 U_centre = U[:, :, np.int(np.round(N/2))]
 
