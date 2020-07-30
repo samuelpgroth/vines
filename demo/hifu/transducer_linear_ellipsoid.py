@@ -30,11 +30,12 @@ from scipy.sparse.linalg import LinearOperator, gmres
 from vines.mie_series_function import mie_function
 from matplotlib import pyplot as plt
 from vines.geometry.geometry import generatedomain, grid3d
-from vines.fields.transducers import bowl_transducer, normalise_power
+from vines.fields.transducers import bowl_transducer_rotate, normalise_power_rotate
 from vie_solve import vie_solver
 import time
 import matplotlib
 from matplotlib import pyplot as plt
+from matplotlib.patches import Ellipse
 
 '''                        Define medium parameters                         '''
 # * speed of sound (c)
@@ -60,10 +61,12 @@ def attenuation(f, alpha0, eta):
 # * inner diameter (inner_D)
 # * outer diameter (outer_D)
 # * total acoustic power (power)
+# * rotation angle about the y-axis
 f1 = 1.1e6
 roc = 0.0632
 inner_D = 0.0
 outer_D = 0.064
+rot_angle = np.pi / 8
 power = 50
 # FIXME: don't need to define focus location but perhaps handy for clarity?
 focus = [roc, 0., 0.]
@@ -73,7 +76,7 @@ focus = [roc, 0., 0.]
 # Define a 1mm radius sphere halfway between transducer and focus
 geom = 'ellipsoid'
 radius = [2e-3, 0.5e-2, 0.5e-2]
-refInd = 1.07 + 1j * 0.0  # defined as k_int / k_ext FIXME:CHECK
+refInd = 1.1 + 1j * 0.0  # defined as k_int / k_ext FIXME:CHECK
 location = [roc, 0., 0.]  # centre of scatterer
 
 # Compute useful quantities: wavelength (lam), wavenumber (k0),
@@ -89,10 +92,10 @@ nPerLam = 10
 dx = lam / nPerLam
 
 # Dimension of computation domain
-x_start = roc - 0.005
-x_end = roc + 0.005
+x_start = roc - 0.0025
+x_end = roc + 0.0025
 wx = x_end - x_start
-wy = 0.015
+wy = 0.012
 wz = wy
 # embed()
 
@@ -109,9 +112,9 @@ print('Number of voxels = ', L*M*N)
 
 # Generate incident field
 start = time.time()
-n_elements = 2**12
-x, y, z, p = bowl_transducer(k1, roc, focus, outer_D / 2, n_elements,
-                             inner_D / 2, points.T, 'x')
+n_elements = 2**9
+x, y, z, p = bowl_transducer_rotate(k1, roc, focus, outer_D / 2, n_elements,
+                             inner_D / 2, points.T, 'x', rot_angle)
 end = time.time()
 print('Incident field evaluation time (s):', end-start)
 dist_from_focus = np.sqrt((points[:, 0]-focus[0])**2 + points[:, 1]**2 +
@@ -120,8 +123,8 @@ idx_near = np.abs(dist_from_focus - roc) < 5e-4
 p[idx_near] = 0.0
 
 # Normalise incident field to achieve desired total acoutic power
-p0 = normalise_power(power, rho, c, outer_D/2, k1, roc,
-                     focus, n_elements, inner_D/2)
+p0 = normalise_power_rotate(power, rho, c, outer_D/2, k1, roc,
+                     focus, n_elements, inner_D/2, rot_angle)
 
 p *= p0
 
@@ -192,10 +195,7 @@ P[0] = P_inc[0] + P_sca[0]
 
 ny_centre = np.int(np.floor(M/2))
 nz_centre = np.int(np.floor(N/2))
-# x_line = (r[:, ny_centre, nz_centre, 0]) * 100
-# plt.plot(x_line, np.abs(P1[:, ny_centre, nz_centre])/1e6,'k-', linewidth=2)
-# plt.show()
-from matplotlib.patches import Ellipse
+
 matplotlib.rcParams.update({'font.size': 22})
 plt.rc('font', family='serif')
 plt.rc('text', usetex=True)
@@ -203,7 +203,7 @@ xmin, xmax = r[0, 0, 0, 0] * 100, r[-1, 0, 0, 0] * 100
 ymin, ymax = r[0, 0, 0, 1] * 100, r[0, -1, 0, 1] * 100
 fig = plt.figure(figsize=(10, 10))
 ax = fig.gca()
-plt.imshow(np.real(P[0][:, :, np.int(np.floor(N/2))].T),
+plt.imshow(np.abs(P[0][:, :, np.int(np.floor(N/2))].T),
            extent=[xmin, xmax, ymin, ymax],
            cmap=plt.cm.get_cmap('viridis'), interpolation='spline16')
 # plt.imshow(np.abs(Mr[:, :, np.int(np.floor(N/2))].T),

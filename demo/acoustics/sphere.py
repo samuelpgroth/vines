@@ -20,7 +20,7 @@ from vines.fields.plane_wave import PlaneWave
 from vines.operators.acoustic_operators import volume_potential
 from vines.precondition.threeD import circulant_embed_fftw
 from vines.operators.acoustic_matvecs import mvp_vec_fftw, mvp_domain, mvp_potential_x_perm
-from scipy.sparse.linalg import LinearOperator, gmres
+from scipy.sparse.linalg import LinearOperator, gmres, bicgstab
 from vines.mie_series_function import mie_function, mie_function_density_contrast
 from matplotlib import pyplot as plt
 import matplotlib
@@ -50,7 +50,7 @@ print('Size parameter = ', ko * radius)
 # of voxels per wavelength. 10 voxels per wavelength typically gives a
 # reasonable (<5%) accuracy. See demo_convergence.py for an example script in
 # which the convergence of the scheme is considered w.r.t. mesh resolution
-nPerLam = 10
+nPerLam = 15
 
 
 # Get mesh geometry and interior wavelength
@@ -80,7 +80,7 @@ ax.set_xlabel('$x$')
 ax.set_ylabel('$y$')
 ax.set_zlabel('$z$')
 set_axes_equal(ax)
-fig.savefig('results/sphere_voxels.pdf')
+fig.savefig('results/sphere_voxels.png')
 plt.close()
 
 
@@ -109,7 +109,7 @@ def mvp(x):
     return mvp_vec_fftw(x, circ_op, idx, Mr)
 
 
-# Linear oper
+# Linear operator
 A = LinearOperator((L*M*N, L*M*N), matvec=mvp)
 
 
@@ -122,7 +122,8 @@ def residual_vector(rk):
 # Iterative solve with GMRES (could equally use BiCG-Stab, for example)
 start = time.time()
 resvec = []
-sol, info = gmres(A, xInVec, tol=1e-5, callback=residual_vector)
+# sol, info = gmres(A, xInVec, tol=1e-5, callback=residual_vector)
+sol, info = bicgstab(A, xInVec, tol=1e-5, callback=residual_vector)
 print("The linear system was solved in {0} iterations".format(len(resvec)))
 end = time.time()
 print('Solve time = ', end-start, 's')
