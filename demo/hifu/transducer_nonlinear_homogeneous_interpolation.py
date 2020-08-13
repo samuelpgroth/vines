@@ -91,7 +91,8 @@ dx = lam / (2 * nPerLam)
 # x_end can be just beyond the focus
 # the width in the y,z directions should be around the width of outer_D,
 # but you can shrink this to speed up computations if required
-x_start = 0.001
+# x_start = 0.001
+x_start = roc - 0.98 * np.sqrt(roc**2 - (outer_D/2)**2)
 x_end = roc + 0.01
 wx = x_end - x_start
 wy = outer_D * 0.9

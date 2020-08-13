@@ -95,8 +95,10 @@ def circulant_embed(toep, L, M, N):
 
 def circulant_embed_fftw(toep, L, M, N):
     import numpy as np
-    import pyfftw, multiprocessing
+    import pyfftw
+    import multiprocessing
     pyfftw.config.NUM_THREADS = multiprocessing.cpu_count()
+    pyfftw.config.PLANNER_EFFORT = 'FFTW_MEASURE'
     # Circulant embedding
     circ = np.zeros((2 * L, 2 * M, 2 * N), dtype=np.complex128)
 

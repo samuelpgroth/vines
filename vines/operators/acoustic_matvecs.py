@@ -3,6 +3,7 @@ import multiprocessing
 import numpy as np
 # Configure PyFFTW to use all cores (the default is single-threaded)
 pyfftw.config.NUM_THREADS = multiprocessing.cpu_count()
+pyfftw.config.PLANNER_EFFORT = 'FFTW_MEASURE'
 def mvp_vec_fftw(xIn, circ_op, idx, Mr):
     ''' Matrix-vector product with FFTW'''
     (L, M, N) = Mr.shape
