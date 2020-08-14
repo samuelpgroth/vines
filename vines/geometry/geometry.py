@@ -215,8 +215,6 @@ def shape(geom, refInd, lambda_ext, radius, nPerLam, aspectRatio):
         dom_y = 2 * b
         dom_z = 2 * c
         P = []  # vertices leave blank
-    elif geom in 'heart':
-        
 
     # lambda_ext = 2 * np.pi * a / sizeParam     # exterior wavelength
     lambda_int = lambda_ext / np.real(refInd)  # interior wavelength

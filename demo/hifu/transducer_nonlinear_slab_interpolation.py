@@ -110,16 +110,16 @@ k_scat = 2 * np.pi * f1 / c_scat + 1j * attenuation(f1, alpha0_scat, eta_scat)
 refInd = k_scat / k1  # define refractive index
 
 # Mesh resolution (number of voxels per fundamental wavelength)
-nPerLam = 5
+nPerLam = 4
 
 # Create voxel mesh
-dx = lam / nPerLam
+dx = lam / (2 * nPerLam)
 
 # Dimension of computation domain
 x_start = roc - 0.02
 x_end = roc + 0.02
 wx = x_end - x_start
-wy = outer_D * 0.3
+wy = outer_D * 0.6
 wz = wy
 # embed()
 
@@ -153,19 +153,24 @@ p0 = normalise_power_rotate(power, rho, c, outer_D/2, k1, roc,
 p *= p0
 
 n_harm = 2
-P = np.zeros((n_harm, L, M, N), dtype=np.complex128)
-P_sca = np.zeros((n_harm, L, M, N), dtype=np.complex128)
-P_inc = np.zeros((n_harm, L, M, N), dtype=np.complex128)
-P_inc[0] = p.reshape(L, M, N, order='F')
+# P = np.zeros((n_harm, L, M, N), dtype=np.complex128)
+# P_sca = np.zeros((n_harm, L, M, N), dtype=np.complex128)
+# P_inc = np.zeros((n_harm, L, M, N), dtype=np.complex128)
+# P_inc[0] = p.reshape(L, M, N, order='F')
+
+P = []
+P_inc = []
+P_inc.append(p.reshape(L, M, N, order='F'))
 
 '''                    Compute scattering (first harmonic)                  '''
 # First locate the portion of mesh inside the ellipsodial scatterer
 # r_sq = ((r[:, :, :, 0] - location[0]) / radius[0])**2 + \
 #        ((r[:, :, :, 1] - location[1]) / radius[1])**2 + \
 #        ((r[:, :, :, 2] - location[2]) / radius[2])**2
+from IPython import embed; embed()
 idx_scat = (np.abs(r[:, :, :, 0] - slab_centre[0]) < slab_width/2)
 # idx_scat = (r_sq <= 1)
-# from IPython import embed; embed()
+
 
 xd, yd, zd = r[:, :, :, 0], r[:, :, :, 1], r[:, :, :, 2]
 # Find indices of bounding box of scatterer
@@ -223,14 +228,32 @@ J_domain[idx_box] = J.reshape((L_box*M_box*N_box, 1))[:, 0]
 # Evaluate at all voxels
 idx_all = np.ones((L, M, N), dtype=bool)
 
-P_sca[0] = mvp_potential_x_perm(J_domain.reshape((L*M*N, 1), order='F'),
+p_sca = mvp_potential_x_perm(J_domain.reshape((L*M*N, 1), order='F'),
                                 circ, idx_all, Mr).reshape(L, M, N, order='F')
 
-P[0] = P_inc[0] + P_sca[0]
+P.append(P_inc[0] + p_sca)
 
+# Set up interpolation function for P[0]
+from scipy.interpolate import RegularGridInterpolator, Rbf
+X = r[:, 0, 0, 0]
+Y = r[0, :, 0, 1]
+Z = r[0, 0, :, 2]
+interp_func_p1 = RegularGridInterpolator((X, Y, Z), P[0],
+                                         method='nearest')
 
-ny_centre = np.int(np.floor(M/2))
-nz_centre = np.int(np.floor(N/2))
+# Store interpolation functions in a list
+interp_funs = []
+interp_funs.append(interp_func_p1)
+
+# Create empty list into which we put the axis coordinates for different meshes
+X_AXIS = []
+ny_centre = np.int(np.round(M/2)-1)
+nz_centre = np.int(np.round(N/2)-1)
+X_AXIS.append(r[:, ny_centre, nz_centre, 0])
+
+# Store on axis fields in a list
+P_AXIS = []
+P_AXIS.append(P[0][:, ny_centre, nz_centre])
 
 # from IPython import embed; embed()
 # Compute intensity on central slice:
@@ -261,7 +284,7 @@ cbar = plt.colorbar()
 cbar.ax.set_ylabel('Pressure (MPa)')
 fig.savefig('results/H101_scatter1.png')
 plt.close()
-# from IPython import embed; embed()
+
 # Plot along central axis
 matplotlib.rcParams.update({'font.size': 22})
 plt.rc('font', family='serif')
@@ -278,19 +301,9 @@ plt.ylabel(r'Pressure (MPa)')
 fig.savefig('results/test_axis1.pdf')
 plt.close()
 
-# from matplotlib.patches import Ellipse
-# fig = plt.figure()
-# ax = fig.add_subplot(211, aspect='auto')
-# # ax.fill(x, y, alpha=0.2, facecolor='yellow',
-# #         edgecolor='yellow', linewidth=1, zorder=1)
-
-# e1 = Ellipse((-0.5, -0.5), 0.2, .1,
-#                      linewidth=1, fill=False, zorder=2)
-# ax.add_patch(e1)
-# plt.xlim([-1,1])
-# plt.ylim([-1,1])
-# fig.savefig('results/H101_scatter.png')
-# plt.close()
+# Power of two function. Used when subdividing mesh
+def is_power_of_two(n):
+    return (n != 0) and (n & (n-1) == 0)
 
 '''      Compute the next harmonics by evaluating the volume potential      '''
 for i_harm in range(1, n_harm):
@@ -302,6 +315,36 @@ for i_harm in range(1, n_harm):
 
     # New refractive index at new frequency:
     refInd2 = k2_scat / k2  # define refractive index
+
+    if i_harm!=1:
+        # Generate the new mesh and perform the interpolation of previous harmonics
+        # onto it
+        # For the meantime, let's just half the mesh size in all dimensions
+        lam2 = 2*np.pi / np.real(k2)
+        # If the harmonic is even number, we divide mesh size by 2
+        if is_power_of_two(i_harm): # if harmonic is just after power of 2
+        # if True:
+            dx2 = dx/2
+            wx2 = wx / 2
+            wy2 = wy / 2
+            wz2 = wy2
+            start = time.time()
+            r2, L2, M2, N2 = generatedomain(dx2, wx2, wy2, wz2)
+            end = time.time()
+            print('Mesh generation for next harmonic = ', end-start)
+            print('No. DOF for next harmonic = ', L2 * M2 * N2)
+            # Adjust r2 so that the far ends of r-dx and r2 coincide
+            r2[:, :, :, 0] = r2[:, :, :, 0] - r2[-1, 0, 0, 0] + r[-1, 0, 0, 0] + \
+                            -dx/2 - dx2/2
+            
+            points2 = r2.reshape(L2*M2*N2, 3, order='F')
+
+            r = r2
+            L, M, N = L2, M2, N2
+            X = r[:, 0, 0, 0]
+            Y = r[0, :, 0, 1]
+            Z = r[0, 0, :, 2]
+            dx, wx, wy, wz = dx2, wx2, wy2, wz2
 
     # Assemble volume potential Toeplitz operator perform circulant embedding
     start = time.time()

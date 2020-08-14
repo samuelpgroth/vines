@@ -112,6 +112,7 @@ def mvp_domain(xIn, circ_op, idx, Mr):
 
 
 pyfftw.config.NUM_THREADS = multiprocessing.cpu_count()
+pyfftw.config.PLANNER_EFFORT = 'FFTW_MEASURE'
 def mvp_volume_potential(xIn, circ_op, idx, Mr):
     ''' Matrix-vector product with FFTW'''
     (L, M, N) = Mr.shape
@@ -138,8 +139,10 @@ def mvp_potential_x_perm(xIn, circ_op, idx, Mr):
     xOut = np.zeros((L, M, N), dtype=np.complex128)
     xOutVec = np.zeros((L * M * N, 1), dtype=np.complex128)
 
-    xFFT = np.fft.fftn(Mr * xInRO, [2 * L, 2 * M, 2 * N])
-    Y = np.fft.ifftn(circ_op * xFFT)
+    # xFFT = np.fft.fftn(Mr * xInRO, [2 * L, 2 * M, 2 * N])
+    # Y = np.fft.ifftn(circ_op * xFFT)
+    xFFT = pyfftw.interfaces.numpy_fft.fftn(Mr * xInRO, [2 * L, 2 * M, 2 * N])
+    Y = pyfftw.interfaces.numpy_fft.ifftn(circ_op * xFFT)
     xOut = Y[0:L, 0:M, 0:N]
     xOut[np.invert(idx)] = 0.0
     xOutVec = xOut.reshape(L * M * N, 1, order='F')
