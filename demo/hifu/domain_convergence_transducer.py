@@ -41,16 +41,25 @@ import itertools
 # * medium density (\rho)
 # * the attenuation power law info (\alpha_0, \eta)
 # * nonlinearity parameter (\beta)
-c = 1487.0
-rho = 998.0
-alpha0 = 0.217
+material = 'water'
+c = 1480.0
+rho = 1000.0
+alpha0 = 0.2
 eta = 2
 beta = 3.5e0
+
+# material = 'liver'
+# c = 1590.0
+# rho = 1060
+# alpha0 = 90.0
+# eta = 1.1
+# beta = 4.4
 
 
 def attenuation(f, alpha0, eta):
     'Attenuation function'
     alpha = alpha0 * (f * 1e-6)**eta
+    alpha = alpha / 8.686  # convert to Nepers/m
     return alpha
 
 
@@ -60,14 +69,20 @@ def attenuation(f, alpha0, eta):
 # * inner diameter (inner_D)
 # * outer diameter (outer_D)
 # * total acoustic power (power)
+# f1 = 1.1e6
+# transducername = 'H131'
+# roc = 0.035
+# inner_D = 0.0
+# outer_D = 0.033
+# power = 150
+
 f1 = 1.1e6
-# roc = 0.0632
-roc = 0.104
-inner_D = 0.04
-# outer_D = 0.064
-outer_D = 0.104
-transducername = 'H142'
-power = 50
+transducername = 'H101'
+roc = 0.0632
+inner_D = 0.0
+outer_D = 0.064
+power = 100
+
 # FIXME: don't need to define focus location but perhaps handy for clarity?
 focus = [roc, 0., 0.]
 # FIXME: need source pressure as input
@@ -78,7 +93,7 @@ focus = [roc, 0., 0.]
 n_harm = 5
 
 # Mesh resolution (number of voxels per fundamental wavelength)
-nPerLam = 20
+nPerLam = 10
 
 # Compute useful quantities: wavelength (lam), wavenumber (k0),
 # angular frequency (omega)
@@ -94,7 +109,8 @@ dx = lam / nPerLam
 # x_end can be just beyond the focus
 # the width in the y,z directions should be around the width of outer_D,
 # but you can shrink this to speed up computations if required
-x_start = 0.001
+# x_start = 0.001
+x_start = roc - 0.99 * np.sqrt(roc**2 - (outer_D/2)**2)
 x_end = roc + 0.01
 wx = x_end - x_start
 wy = outer_D * 1.0
@@ -145,7 +161,7 @@ plt.xlabel(r'$x$ (cm)')
 plt.ylabel(r'$y$ (cm)')
 cbar = plt.colorbar()
 cbar.ax.set_ylabel('Pressure (MPa)')
-filename = 'results/' + transducername + '_power' + str(power) + '.png'
+filename = 'results/' + transducername + '_power' + str(power) + '_nPerLam' + str(nPerLam) + '.png'
 fig.savefig('filename')
 plt.close()
 
@@ -207,7 +223,7 @@ def convergence_domain_size(f_rhs, mvp, circ_op, r, L, M, N, harm, roc, k1):
 
     import pickle
     filename = 'results/' + transducername + '_power' + str(power) + \
-        '_water_harmonic' + str(harm) + '.pickle'
+        '_' + material + '_harmonic' + str(harm) + '_nPerLam' + str(nPerLam) + '.pickle'
     with open(filename, 'wb') as f:
         pickle.dump([line_harmonic, TOL, xMinVals, xMaxVals, yMinVals,
                      yMaxVals, roc, np.real(k1)], f)
@@ -276,15 +292,19 @@ plt.xlim([x_start*100, x_end*100])
 plt.ylim([0, np.ceil(np.max(np.abs(P[0, :, ny_centre, nz_centre])/1e6))])
 plt.xlabel(r'Axial distance (cm)')
 plt.ylabel(r'Pressure (MPa)')
+# filename = 'results/' + transducername + '_power' + str(power) + \
+#         '_water_harms_axis.pdf'
 filename = 'results/' + transducername + '_power' + str(power) + \
-        '_water_harms_axis.pdf'
+        '_' + material + '_harms_axis' + '_nPerLam' + str(nPerLam) + '.pdf'      
 fig.savefig(filename)
 plt.close()
 
 
 # Save first harmonic along central axis
 import pickle
+# filename = 'results/' + transducername + '_power' + str(power) + \
+#         '_water_harmonic1' + '.pickle'
 filename = 'results/' + transducername + '_power' + str(power) + \
-        '_water_harmonic1' + '.pickle'
+        '_' + material + '_harmonic1' + '_nPerLam' + str(nPerLam) + '.pickle'
 with open(filename, 'wb') as f:
     pickle.dump([P[0, :, ny_centre, nz_centre], x_line], f)

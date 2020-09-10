@@ -9,7 +9,7 @@ from analytical import penetrable_circle
 from scipy.linalg import toeplitz
 import time
 
-ko = 40  # Wavenumber
+ko = 80  # Wavenumber
 domain_width = 1.5  # radius of domain (half width)
 square_side = 1
 lam = 2*np.pi/ko
@@ -205,6 +205,7 @@ prec = LinearOperator((M*N, M*N), matvec=mvp_prec)
 it_count = 0
 start = time.time()
 solp, info = gmres(A, eInc, M=prec, tol=1e-4, callback=iteration_counter)
+# solp, info = gmres(A, eInc, tol=1e-4, callback=iteration_counter)
 print("The linear system was solved in {0} iterations".format(it_count))
 end = time.time()
 print('Solve time = ', end-start,'s')

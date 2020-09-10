@@ -34,7 +34,7 @@ def bowl_transducer(k, focal_length, focus, radius,
             z.append(focal_length * np.cos(theta))
             n_count += 1
 
-    # Ro-order so that the transducer is behind the axis, rather than in front
+    # Re-order so that the transducer is behind the axis, rather than in front
     if axis in 'z':
         x = np.array(x)
         y = np.array(y)
@@ -120,12 +120,17 @@ def bowl_transducer(k, focal_length, focus, radius,
 
 def normalise_power(power, rho, c0, radius, k1, focal_length,
                     focus, n_elements, aperture_radius):
+    # NOTE: this assumes symmetry in theta to reduced the integral over a disc
+    # to an integral over the radial direction only. Need to generalise for more
+    # complex sources
     import numpy as np
     n_quad = 500
     r_quad_dim = radius * 1.0
     r_quad = np.linspace(0, r_quad_dim, n_quad)
     # x_location_disk = x_location
-    x_location_disk = focal_length - 0.98 * np.sqrt(focal_length**2 - radius**2)
+    # x_location_disk = focal_length - 0.9135 * np.sqrt(focal_length**2 - radius**2)
+    x_location_disk = focal_length - 0.99 * np.sqrt(focal_length**2 - radius**2)
+    # x_location_disk = focal_length - 0.9 * np.sqrt(focal_length**2 - radius**2)
     points_quad = np.vstack((x_location_disk * np.ones(n_quad),
                             np.zeros(n_quad),
                             r_quad))

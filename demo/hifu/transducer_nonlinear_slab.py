@@ -1,10 +1,10 @@
 #
-# Nonlinear field scattered by a homogeneous ellipsoid
-# ====================================================
+# Nonlinear field scattered by a homogeneous slab
+# ===============================================
 #
 # This demo illustrates how to:
 #
-# * Compute the scattering of a nonlinear time-harmonic field by an obstacle
+# * Compute the scattering of a nonlinear time-harmonic field by a slab
 # * Use incident field routines to generate the field from a HIFU transducer
 # * Evaluate the solution in a field larger than the scatterer's bounding box
 # * Make a nice plot of the solution in the domain

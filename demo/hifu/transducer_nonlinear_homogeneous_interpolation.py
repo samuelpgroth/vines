@@ -34,22 +34,40 @@ from vines.fields.transducers import bowl_transducer, normalise_power
 import time
 import matplotlib
 from matplotlib import pyplot as plt
+import math
+
+def my_round(n):
+    delta = n - np.floor(n)
+    if delta < 0.5:
+        part = np.floor(n)
+    else:
+        part = np.ceil(n)
+    return part
 
 '''                        Define medium parameters                         '''
 # * speed of sound (c)
 # * medium density (\rho)
 # * the attenuation power law info (\alpha_0, \eta)
 # * nonlinearity parameter (\beta)
-c = 1487.0
-rho = 998.0
-alpha0 = 0.217
+material = 'water'
+c = 1480.0
+rho = 1000.0
+alpha0 = 0.2
 eta = 2
 beta = 3.5e0
+
+# material = 'liver'
+# c = 1590.0
+# rho = 1060
+# alpha0 = 90.0
+# eta = 1.1
+# beta = 4.4
 
 
 def attenuation(f, alpha0, eta):
     'Attenuation function'
     alpha = alpha0 * (f * 1e-6)**eta
+    alpha = alpha / 8.686 
     return alpha
 
 
@@ -59,23 +77,42 @@ def attenuation(f, alpha0, eta):
 # * inner diameter (inner_D)
 # * outer diameter (outer_D)
 # * total acoustic power (power)
+# f1 = 1.1e6
+# transducername = 'H131_linear'
+# roc = 0.035
+# inner_D = 0.0
+# outer_D = 0.033
+# power = 100
+
 f1 = 1.1e6
-transducername = 'H142'
-roc = 0.104
-inner_D = 0.04
-outer_D = 0.104
+transducername = 'H101_linear'
+roc = 0.0632
+inner_D = 0.0
+outer_D = 0.064
 power = 100
+
+# f1 = 1.1e6
+# transducername = 'H151'
+# roc = 0.1
+# inner_D = 0.0
+# outer_D = 0.064
+# power = 100
+
+# f1 = 1.1e6
+# transducername = 'H142'
+# roc = 0.104
+# inner_D = 0.04
+# outer_D = 0.104
+# power = 100
 # FIXME: don't need to define focus location but perhaps handy for clarity?
 focus = [roc, 0., 0.]
 # FIXME: need source pressure as input
 
 # How many harmonics to compute
-# (mesh resolution should be adjusted accordingly, I recommend setting
-# nPerLam  >= 3 * n_harm, depending on desired speed and/or accuracy)
 n_harm = 5
 
 # Mesh resolution (number of voxels per fundamental wavelength)
-nPerLam = 5
+nPerLam = 6
 
 # Compute useful quantities: wavelength (lam), wavenumber (k0),
 # angular frequency (omega)
@@ -92,11 +129,13 @@ dx = lam / (2 * nPerLam)
 # the width in the y,z directions should be around the width of outer_D,
 # but you can shrink this to speed up computations if required
 # x_start = 0.001
-x_start = roc - 0.98 * np.sqrt(roc**2 - (outer_D/2)**2)
+x_start = roc - 0.99 * np.sqrt(roc**2 - (outer_D/2)**2)
 x_end = roc + 0.01
 wx = x_end - x_start
-wy = outer_D * 0.9
+wy = outer_D * 1
 wz = wy
+
+start_to_focus = roc - x_start
 
 start = time.time()
 r, L, M, N = generatedomain(dx, wx, wy, wz)
@@ -136,7 +175,7 @@ X = r[:, 0, 0, 0]
 Y = r[0, :, 0, 1]
 Z = r[0, 0, :, 2]
 interp_func_p1 = RegularGridInterpolator((X, Y, Z), P[0],
-                                                    method='nearest')
+                                                    method='linear')
 
 # Store interpolation functions in a list
 interp_funs = []
@@ -163,8 +202,8 @@ plt.close()
 
 # Create empty list into which we put the axis coordinates for different meshes
 X_AXIS = []
-ny_centre = np.int(np.round(M/2)-1)
-nz_centre = np.int(np.round(N/2)-1)
+ny_centre = np.int(my_round(M/2)-1)
+nz_centre = np.int(my_round(N/2)-1)
 X_AXIS.append(r[:, ny_centre, nz_centre, 0])
 
 # Store on axis fields in a list
@@ -185,33 +224,68 @@ for i_harm in range(1, n_harm):
         # onto it
         # For the meantime, let's just half the mesh size in all dimensions
         lam2 = 2*np.pi / np.real(k2)
-        # dx2 = lam2 / nPerLam
+
+        ''' Testing '''
+        dx2 = lam2 / nPerLam
+        # x_start = roc - start_to_focus / i_harm
+        x_start2= roc - 0.99 * np.sqrt(roc**2 - (outer_D/2)**2) * 2 / (i_harm + 1)
+        x_end2 = roc + 0.01
+        wx2 = x_end2 - x_start2
+        wy2 = outer_D * 2 / (i_harm + 1)
+        wz2 = wy2
+        # x_start = roc - start_to_focus * i_harm / (i_harm + 1)
+        # x_end = roc + 0.01 - dx
+        # wx2 = x_end - x_start
+        # wy2 = wy /2
+        start = time.time()
+        r2, L2, M2, N2 = generatedomain(dx2, wx2, wy2, wz2)
+        end = time.time()
+        print('Mesh generation for next harmonic = ', end-start)
+        print('No. DOF for next harmonic = ', L2 * M2 * N2)
+        # Adjust r2 so that the far ends of r-dx and r2 coincide
+        r2[:, :, :, 0] = r2[:, :, :, 0] - r2[-1, 0, 0, 0] + r[-1, 0, 0, 0] + \
+                        -dx/2 - dx2/2
+        
+        points2 = r2.reshape(L2*M2*N2, 3, order='F')
+
+        r = r2
+        L, M, N = L2, M2, N2
+        X = r[:, 0, 0, 0]
+        Y = r[0, :, 0, 1]
+        Z = r[0, 0, :, 2]
+        dx, wx, wy, wz = dx2, wx2, wy2, wz2
+        ''' end testing '''
         # If the harmonic is even number, we divide mesh size by 2
         # from IPython import embed; embed()
         # if (i_harm % 2) == 0:  # then even harmonic
-        if is_power_of_two(i_harm): # if harmonic is just after power of 2
-        # if True:
-            dx2 = dx/2
-            wx2 = wx / 2
-            wy2 = wy / 2
-            wz2 = wy2
-            start = time.time()
-            r2, L2, M2, N2 = generatedomain(dx2, wx2, wy2, wz2)
-            end = time.time()
-            print('Mesh generation for next harmonic = ', end-start)
-            print('No. DOF for next harmonic = ', L2 * M2 * N2)
-            # Adjust r2 so that the far ends of r-dx and r2 coincide
-            r2[:, :, :, 0] = r2[:, :, :, 0] - r2[-1, 0, 0, 0] + r[-1, 0, 0, 0] + \
-                            -dx/2 - dx2/2
-            
-            points2 = r2.reshape(L2*M2*N2, 3, order='F')
+        # if is_power_of_two(i_harm): # if harmonic is just after power of 2
+        # # if True:
+        #     dx2 = dx/2
+        #     # wx2 = wx / 2
 
-            r = r2
-            L, M, N = L2, M2, N2
-            X = r[:, 0, 0, 0]
-            Y = r[0, :, 0, 1]
-            Z = r[0, 0, :, 2]
-            dx, wx, wy, wz = dx2, wx2, wy2, wz2
+        #     x_start2 = roc - start_to_focus / i_harm
+        #     x_end2 = roc + 0.01
+        #     wx2 = x_end2 - x_start2
+            
+        #     wy2 = wy / 2
+        #     wz2 = wy2
+        #     start = time.time()
+        #     r2, L2, M2, N2 = generatedomain(dx2, wx2, wy2, wz2)
+        #     end = time.time()
+        #     print('Mesh generation for next harmonic = ', end-start)
+        #     print('No. DOF for next harmonic = ', L2 * M2 * N2)
+        #     # Adjust r2 so that the far ends of r-dx and r2 coincide
+        #     r2[:, :, :, 0] = r2[:, :, :, 0] - r2[-1, 0, 0, 0] + r[-1, 0, 0, 0] + \
+        #                     -dx/2 - dx2/2
+            
+        #     points2 = r2.reshape(L2*M2*N2, 3, order='F')
+
+        #     r = r2
+        #     L, M, N = L2, M2, N2
+        #     X = r[:, 0, 0, 0]
+        #     Y = r[0, :, 0, 1]
+        #     Z = r[0, 0, :, 2]
+        #     dx, wx, wy, wz = dx2, wx2, wy2, wz2
     
         # # Interpolate P1 and P2 onto finer grid
         # start = time.time()
@@ -224,8 +298,6 @@ for i_harm in range(1, n_harm):
         # print('Interpolation time = ', end-start)
 
         
-
-
     # Assemble volume potential Toeplitz operator perform circulant embedding
     start = time.time()
     toep_op = volume_potential(k2, r)
@@ -251,7 +323,6 @@ for i_harm in range(1, n_harm):
         xIn = -9 * beta * omega**2 / (rho * c**4) * P1_interp * P2_interp
     elif i_harm == 3:
         # Fourth harmonic
-        # from IPython import embed; embed()
         start = time.time()
         p1_interp = interp_funs[0](points2)
         P1 = p1_interp.reshape(L2, M2, N2, order='F')
@@ -265,8 +336,19 @@ for i_harm in range(1, n_harm):
             (P2 * P2 + 2 * P1 * P3)
     elif i_harm == 4:
         # Fifth harmonic
+        start = time.time()
+        p1_interp = interp_funs[0](points2)
+        P1 = p1_interp.reshape(L2, M2, N2, order='F')
+        p2_interp = interp_funs[1](points2)
+        P2 = p2_interp.reshape(L2, M2, N2, order='F')
+        p3_interp = interp_funs[2](points2)
+        P3 = p3_interp.reshape(L2, M2, N2, order='F')
+        p4_interp = interp_funs[3](points2)
+        P4 = p4_interp.reshape(L2, M2, N2, order='F')
+        end = time.time()
+        print('Interpolation time = ', end-start)
         xIn = -25 * beta * omega**2 / (rho * c**4) * \
-            (P[0] * P[3] + P[1] * P[2])
+            (P1 * P4 + P2 * P3)
     elif i_harm == 5:
         # Sixth harmonic
         xIn = -18 * beta * omega**2 / (rho * c**4) * \
@@ -296,7 +378,7 @@ for i_harm in range(1, n_harm):
     # Set up grid interpolation function for this new harmonic
     # FIXME: rename
     interp_func_p2 = RegularGridInterpolator((X, Y, Z), P[i_harm],
-                                                    method='nearest')
+                                                    method='linear')
 
     # Append interpolation function to the list
     interp_funs.append(interp_func_p2)
@@ -304,14 +386,15 @@ for i_harm in range(1, n_harm):
     # from IPython import embed; embed()
 
     # Find x-axis coordinates and append to list
-    ny_centre = np.int(np.round(M/2)-1)
-    nz_centre = np.int(np.round(N/2)-1)
+    # ny_centre = np.int(np.round(M/2)-1)
+    # nz_centre = np.int(np.round(N/2)-1)
+    ny_centre = np.int(my_round(M/2)-1)
+    nz_centre = np.int(my_round(N/2)-1)
     x_line = (r[:, ny_centre, nz_centre, 0])
     X_AXIS.append(x_line)
 
     # Append on axis field to list
     P_AXIS.append(P[i_harm][:, ny_centre, nz_centre])
-
 
 # from IPython import embed; embed()
 
@@ -330,6 +413,12 @@ plt.ylim([0, np.max(np.abs(P_AXIS[0]))/1e6])
 plt.xlabel(r'Axial distance (cm)')
 plt.ylabel(r'Pressure (MPa)')
 filename = 'results/' + transducername + '_power' + str(power) + \
-        '_water_harms_axis.pdf'
+        '_' + material + '_harms_axis.pdf'
 fig.savefig(filename)
 plt.close()
+
+import pickle
+filename = 'results/' + transducername + '_power' + str(power) + \
+        '_' + material + '_nPerLam' + str(nPerLam) + '.pickle'
+with open(filename, 'wb') as f:
+        pickle.dump([X_AXIS, P_AXIS], f)

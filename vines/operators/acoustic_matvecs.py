@@ -115,6 +115,8 @@ pyfftw.config.NUM_THREADS = multiprocessing.cpu_count()
 pyfftw.config.PLANNER_EFFORT = 'FFTW_MEASURE'
 def mvp_volume_potential(xIn, circ_op, idx, Mr):
     ''' Matrix-vector product with FFTW'''
+    pyfftw.config.NUM_THREADS = multiprocessing.cpu_count()
+    pyfftw.config.PLANNER_EFFORT = 'FFTW_MEASURE'
     (L, M, N) = Mr.shape
     xInRO = xIn.reshape(L, M, N, order='F')
     xInRO[np.invert(idx)] = 0.0

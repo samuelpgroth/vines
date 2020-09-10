@@ -40,16 +40,24 @@ import itertools
 # * medium density (\rho)
 # * the attenuation power law info (\alpha_0, \eta)
 # * nonlinearity parameter (\beta)
-c = 1487.0
-rho = 998.0
-alpha0 = 0.217
-eta = 2
-beta = 3.5e0
+# c = 1487.0
+# rho = 998.0
+# alpha0 = 0.217
+# eta = 2
+# beta = 3.5e0
+
+material = 'liver'
+c = 1590.0
+rho = 1040
+alpha0 = 90.0
+eta = 1.1
+beta = 4.4
 
 
 def attenuation(f, alpha0, eta):
     'Attenuation function'
     alpha = alpha0 * (f * 1e-6)**eta
+    alpha = alpha / 8.686
     return alpha
 
 
@@ -59,11 +67,20 @@ def attenuation(f, alpha0, eta):
 # * inner diameter (inner_D)
 # * outer diameter (outer_D)
 # * total acoustic power (power)
+# f1 = 1.1e6
+# roc = 0.0632
+# inner_D = 0.0
+# outer_D = 0.064
+# power = 50
+
 f1 = 1.1e6
-roc = 0.0632
+transducername = 'H131'
+roc = 0.035
 inner_D = 0.0
-outer_D = 0.064
-power = 50
+outer_D = 0.033
+power = 100
+
+
 # FIXME: don't need to define focus location but perhaps handy for clarity?
 focus = [roc, 0., 0.]
 # FIXME: need source pressure as input
@@ -74,7 +91,7 @@ focus = [roc, 0., 0.]
 n_harm = 2
 
 # Mesh resolution (number of voxels per fundamental wavelength)
-nPerLam = 8
+nPerLam = 10
 
 # Compute useful quantities: wavelength (lam), wavenumber (k0),
 # angular frequency (omega)
@@ -90,10 +107,12 @@ dx = lam / nPerLam
 # x_end can be just beyond the focus
 # the width in the y,z directions should be around the width of outer_D,
 # but you can shrink this to speed up computations if required
-x_start = 0.001
+# x_start = 0.001
+# x_start = roc - 0.99 * np.sqrt(roc**2 - (outer_D/2)**2)
+x_start = 0
 x_end = roc + 0.01
 wx = x_end - x_start
-wy = outer_D*0.5
+wy = outer_D*1
 wz = wy/1000
 # wz = wy
 
@@ -103,7 +122,7 @@ r, L, M, N = generatedomain(dx, wx, wy, wz)
 
 # Adjust r by shifting x locations
 r[:, :, :, 0] = r[:, :, :, 0] - r[0, 0, 0, 0] + x_start
-r[:, :, :, 1] = r[:, :, :, 1] - r[0, 0, 0, 1]
+# r[:, :, :, 1] = r[:, :, :, 1] - r[0, 0, 0, 1]
 end = time.time()
 print('Mesh generation time:', end-start)
 points = r.reshape(L*M*N, 3, order='F')
@@ -150,6 +169,9 @@ cbar = plt.colorbar()
 cbar.ax.set_ylabel('Pressure (MPa)')
 fig.savefig('results/test.png')
 plt.close()
+
+from IPython import embed; embed()
+exit()
 
 '''      Compute the next harmonics by evaluating the volume potential      '''
 for i_harm in range(1, n_harm):
