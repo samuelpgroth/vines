@@ -36,5 +36,8 @@ Samuel P Groth, Athanasios G Polimeridis, Alexandra Tambova, Jacob K White<br>
 * [**Accelerating the discrete dipole approximation via circulant preconditioning**](https://www.sciencedirect.com/science/article/pii/S0022407319302080)<br>
 Samuel P Groth, Athanasios G Polimeridis, Jacob K White<br>
 *Journal of Quantitative Spectroscopy and Radiative Transfer*, 2020
+* [**Accelerating numerical methods for nonlinear acoustics using nested meshing**](https://arxiv.org/pdf/2011.03009.pdf)<br>
+Samuel P Groth, Pierre Gélat, Seyyed R Haqshenas, Nader Saffari, Elwin van 't Wout, Timo Betcke, Garth N Wells<br>
+Submitted, 2020
 
 
