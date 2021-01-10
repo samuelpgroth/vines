@@ -7,13 +7,13 @@ import matplotlib.pyplot as plt
 import itertools
 
 # Name of transducer
-transducer_name = 'H101'
+transducer_name = 'H131'
 power = 100
-material = 'water'
+material = 'liver'
 
 # How many harmonics have been computed
 n_harms = 5
-nPerLam = 10
+nPerLam = 20
 
 # Set up plot
 # Plotting convergence errors
@@ -29,10 +29,10 @@ marker = itertools.cycle(('ro-', 'bs-', 'gd-', 'mp-'))
 
 # filename = 'results/Pierre_H101_water_harmonic1.pickle'
 # filename = 'results/H101_water_harmonic1.pickle'
-# filename = 'results/' + transducer_name + '_power' + str(power) + \
-#             '_' + material + '_harmonic1.pickle'
 filename = 'results/' + transducer_name + '_power' + str(power) + \
-            '_' + material + '_harmonic1_nPerLam' + str(nPerLam) + '.pickle'
+            '_' + material + '_harmonic1.pickle'
+# filename = 'results/' + transducer_name + '_power' + str(power) + \
+#             '_' + material + '_harmonic1_nPerLam' + str(nPerLam) + '.pickle'
 
 with open(filename, 'rb') as f:
     bits = pickle.load(f)
@@ -50,10 +50,10 @@ for i_harm in range(0, n_harms - 1):
     # Load pickle file
     # filename = 'results/H101_water_harmonic' + str(i_harm+2) + '.pickle'
     # filename = 'results/Pierre_H101_water_harmonic' + str(i_harm+2) + '.pickle'
-    # filename = 'results/' + transducer_name + '_power' + str(power) + \
-    #         '_' + material + '_harmonic' + str(i_harm + 2) + '.pickle'
     filename = 'results/' + transducer_name + '_power' + str(power) + \
-            '_' + material + '_harmonic' + str(i_harm + 2) + '_nPerLam' + str(nPerLam) + '.pickle'
+            '_' + material + '_harmonic' + str(i_harm + 2) + '.pickle'
+    # filename = 'results/' + transducer_name + '_power' + str(power) + \
+    #         '_' + material + '_harmonic' + str(i_harm + 2) + '_nPerLam' + str(nPerLam) + '.pickle'
 
     with open(filename, 'rb') as f:
         VARS = pickle.load(f)
@@ -96,7 +96,8 @@ for i_harm in range(0, n_harms - 1):
         #                        np.max(np.abs(line[i, :]))) / \
         #                 np.max(np.abs(line[-1, :]))
 
-        WX[i] = (roc - xMinVals[i]) / (roc - xMinVals[-1])
+        # WX[i] = (roc - xMinVals[i]) / (roc - xMinVals[-1])
+        WX[i] = (xMaxVals[i] - xMinVals[i]) / (xMaxVals[-1] - xMinVals[-1])
         WY[i] = yMinVals[i] / yMinVals[-1]
 
         if (rel_errors[i] < 1e-2):
@@ -113,8 +114,12 @@ for i_harm in range(0, n_harms - 1):
                 norms.append(np.linalg.norm(line[i, :]))
                 print('Fraction of y domain = ', WY[i])
                 print('Fraction of x domain = ', WX[i])
-    # plt.semilogy(np.flip(WX), 100*np.flip(rel_errors), next(marker), linewidth=2)
-    plt.semilogy(np.flip(WY), 100*np.flip(rel_errors), next(marker), linewidth=2)
+                # from IPython import embed;embed()
+                ROT = ((roc - xMinVals[-1]) * lammy / (lam/2) + xMaxVals[-1] - roc) / (xMaxVals[-1]-xMinVals[-1])
+                # ROT = ((roc - xMinVals[-1]) * lammy / (lam/2)) / (roc-xMinVals[-1])
+                print('Rule of thumb x = ', ROT)
+    plt.semilogy(np.flip(WX), 100*np.flip(rel_errors), next(marker), linewidth=2)
+    # plt.semilogy(np.flip(WY), 100*np.flip(rel_errors), next(marker), linewidth=2)
     # plt.loglog(np.flip(TOL[:-1]), np.flip(rel_errors)*100, next(marker), linewidth=2)
     # from IPython import embed;embed()
 
@@ -138,10 +143,10 @@ plt.legend((r'$p_2$', r'$p_3$',r'$p_4$',r'$p_5$'),
            shadow=False, loc=(0.03, 0.03), handlelength=1.5, fontsize=20)
 
 # plt.xlabel(r'$Q_0$')
-plt.xlabel(r'Fraction of reference domain ($y/z$)')
+plt.xlabel(r'Fraction of reference domain ($x$)')
 plt.ylabel('Error (\%)')
 
-filename = 'results/domain_convergence_space_y_' + material + transducer_name + '_power' + str(power) + '.pdf'
+filename = 'results/domain_convergence_space_x_' + material + transducer_name + '_power' + str(power) + '.pdf'
 fig.savefig(filename)
 plt.close()
 

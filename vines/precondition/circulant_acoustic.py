@@ -1,4 +1,7 @@
 # Circulant acoustic
+import numpy as np
+from scipy.linalg import toeplitz
+
 def circ_1_level_acoustic(Toep, L, M, N, on_off):
     import numpy as np
     from scipy.linalg import toeplitz
@@ -98,3 +101,46 @@ def mvp_circ2_acoustic(JInVec, circ2_inv, L, M, N, idx):
     TEMP_RO[np.invert(idx)] = 0.0 +0j 
     matvec = TEMP_RO.reshape(L*M*N, 1, order='F')
     return matvec
+
+
+def circulant_preconditioner(toep, M, N, refInd):
+    c = np.zeros((M, N), dtype=np.complex128)
+
+    for i in range(1, M):
+        c[i, :] = (M - i) / M * toep[i, :] + i/M * toep[(M - 1) - i + 1, :]
+
+    # Fix up 1st entry
+    c[0, :] = toep[0, :]
+
+    c_fft = np.fft.fft(c.T).T
+
+    # Construct 1-level preconditioner
+    circ = np.zeros((M, N, N), dtype=np.complex128)
+    for i_loop in range(0, M):
+        temp = np.zeros((N, N), dtype=np.complex128)
+        temp[0:N, 0:N] = toeplitz(c_fft[i_loop, 0:N],
+                                c_fft[i_loop, 0:N])
+        circ[i_loop, :, :] = temp
+
+    # Invert preconditioner
+    circ_inv = np.zeros_like(circ)
+    for i in range(0, M):
+        circ_inv[i, :, :] = np.linalg.inv(np.identity(N) - (refInd**2 - 1) *
+                                        circ[i, :, :])
+
+    return circ_inv
+
+
+# Define matrix-vector product with circulant preconditoner
+def mvp_circ_2d(x, circ_inv, M, N, idx):
+    temp = x.reshape(M, N, order='F')
+    temp[np.invert(idx)] = 0.0
+    temp = np.fft.fft(temp, axis=0).T
+    for i in range(0, M):
+        temp[:, i] = np.matmul(circ_inv[i, :, :], temp[:, i])
+
+    temp = np.fft.ifft(temp.T, axis=0)
+    temp[np.invert(idx)] = 0.0 + 0.0j
+    matvec = temp.reshape(M*N, 1, order='F')
+    return matvec
+

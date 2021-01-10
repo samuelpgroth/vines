@@ -243,3 +243,67 @@ def shape(geom, refInd, lambda_ext, radius, nPerLam, aspectRatio):
         idx = p.contains_points(points).reshape(L, M, N, order='F')
 
     return r, idx, res, P, lambda_int
+
+
+def shape_2d(geom, refInd, lambda_ext, radius, nPerLam):
+    import numpy as np
+    from matplotlib import path
+
+    if geom in 'hex':
+        a = radius
+        b = np.sqrt(3)/2 * a
+        dom_x = 2 * a
+        dom_y = 2 * b
+        theta = np.arange(0, 7) * 2*np.pi/6
+        verts = a * np.exp(1j * theta)
+        P = np.zeros((verts.shape[0], 2), dtype=np.float64)
+        P[:, 0] = verts.real
+        P[:, 1] = verts.imag
+    elif geom in 'koch':
+        a = radius
+        x, y, _ = koch_snowflake(order=5, scale=a)
+        dom_x = np.max(x) - np.min(x)
+        dom_y = np.max(y) - np.min(y)
+        P = np.zeros((x.shape[0]+1, 2), dtype=np.float64)
+        P[:-1, 0] = x
+        P[:-1, 1] = y
+        P[-1, 0] = x[0]
+        P[-1, 1] = y[0]
+    elif geom in 'circle':
+        a = radius
+        dom_x = 2 * a
+        dom_y = dom_x
+        P = []  # vertices leave blank
+    elif geom in 'ellipse':
+        a = radius[0]
+        b = radius[1]
+        dom_x = 2 * a
+        dom_y = 2 * b
+        P = []  # vertices leave blank
+
+    # lambda_ext = 2 * np.pi * a / sizeParam     # exterior wavelength
+    lambda_int = lambda_ext / np.real(refInd)  # interior wavelength
+
+    # Discretise geometry into voxels
+    h_pref = dom_x  # enforce precise discretisation in x-direction
+    res_temp = lambda_int / nPerLam  # provisional resolution
+    L = np.int(np.ceil(h_pref / res_temp))
+    res = h_pref / L
+
+    r, L, M = generatedomain2d(res, dom_x, dom_y)
+
+    # Determine which points lie inside shape
+    if geom in 'circle':
+        r_sq = r[:, :, 0]**2 + r[:, :, 1]**2
+        idx = (r_sq <= a**2)
+        # from IPython import embed; embed()
+    elif geom in 'ellipse':
+        r_el = (r[:, :, 0] / a)**2 + (r[:, :, 1] / b)**2
+        idx = (r_el <= 1)
+    else:
+        # Polygon
+        points = r.reshape(L*M, 2, order='F')
+        p = path.Path(P)
+        idx = p.contains_points(points).reshape(L, M, order='F')
+
+    return r, idx, res, P, lambda_int

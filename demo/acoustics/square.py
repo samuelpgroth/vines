@@ -9,12 +9,12 @@ from analytical import penetrable_circle
 from scipy.linalg import toeplitz
 import time
 
-ko = 80  # Wavenumber
+ko = 40  # Wavenumber
 domain_width = 1.5  # radius of domain (half width)
 square_side = 1
 lam = 2*np.pi/ko
 refInd = 1.2
-n_per_lam = 10  # Pixels per wavelength
+n_per_lam = 10 # Pixels per wavelength
 
 h_temp = lam / n_per_lam  # temp pixel dimension
 
@@ -50,6 +50,7 @@ perm = np.ones(M*N)  # permittivities
 # Find the indices of the pixels lying inside the square
 IDX = (np.abs(np.real(x)) <= square_side/2) * \
       (np.abs(np.imag(x)) <= square_side/2)
+# IDX = np.abs(x)**2 <= square_side/2
 idx = np.where(IDX)  # locate indices of points inside circle
 
 perm[idx[0]] = refInd**2  # assume permittivity of scatterer is 2 for now

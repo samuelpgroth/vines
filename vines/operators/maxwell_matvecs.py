@@ -6,7 +6,7 @@ def mvp_vec(JIn0, op_out, idx, Gram, Mr, Mc):
 
     (L, M, N) = Mr.shape
     JIn = JIn0.reshape(L, M, N, 3, order = 'F') 
-    JIn[np.invert(idx)] = 0.0  
+    JIn[np.invert(idx)] = 0.0
 
     JOut = np.zeros((L, M, N, 3), dtype=np.complex128)
     JOutVec = np.zeros((3 * L * M* N, 1), dtype=np.complex128)

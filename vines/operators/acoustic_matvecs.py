@@ -206,3 +206,28 @@ def mvp_potential_grad(xIn, circ_op_grad, idx, Dr_grad, rho_ratio):
     return xOutVec
 
 
+def mvp_2d(xIn, opCirc, idx, MR):
+    (M, N) = MR.shape
+    xInRO = xIn.reshape(M, N, order='F')
+    xInRO[np.invert(idx)] = 0.0
+    # XFFT = np.fft.fftn(xInRO, [2 * M, 2 * N])
+    XFFT = pyfftw.interfaces.numpy_fft.fftn(xInRO, [2 * M, 2 * N])
+    # Y = np.fft.ifftn(opCirc * XFFT)
+    Y = pyfftw.interfaces.numpy_fft.ifftn(opCirc * XFFT)
+    xTemp = Y[0:M, 0:N]
+    xPerm = MR * xTemp
+    xOutArray = xInRO - xPerm
+    xOutArray[np.invert(idx)] = 0.0
+    xOut = xOutArray.reshape(M * N, 1, order='F')
+    return xOut
+
+
+# Post-processing for evaluating the scattered field everywhere
+def scattered_field(xIn, opCirc, M, N, MR):
+    xInRO = xIn.reshape(M, N, order='F')
+    XFFT = np.fft.fftn(MR * xInRO, [2*M, 2*N])
+    Y = np.fft.ifftn(opCirc * XFFT)
+    xOut = Y[0:M, 0:N]
+    return xOut
+
+

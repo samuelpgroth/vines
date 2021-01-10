@@ -1,5 +1,6 @@
 import numpy as np
 from numba import njit, prange
+from scipy.special import hankel1
 
 
 def volume_potential(ko, r):
@@ -207,3 +208,35 @@ def grad_potential(ko, r):
         return toep
 
     return grad_potential_fast(ko)
+
+
+def get_operator_2d(A, ko, x, a):
+    M, N, _ = x.shape
+    
+    # Self term
+    self_term = a**2 * 1j * np.pi/2 * ((1 + 1j * np.euler_gamma) / 2
+                - 1j / np.pi + 1j / np.pi * np.log(ko * a / 2))
+
+    toep = np.zeros((M, N), dtype=np.complex128)
+    for i in range(M):
+        for j in range(N):
+            if i == 0 and j == 0:
+                toep[i, j] = self_term
+            else:
+                toep[i, j] = A * 1j/4 * hankel1(0,
+                    ko * np.linalg.norm(x[0, 0, :] - x[i, j, :]))
+
+    return ko**2 * toep
+
+
+def circulant_embedding(toep, M, N):
+    circ = np.zeros((2 * M, 2 * N), dtype=np.complex128)
+
+    # Circulant embedding
+    circ[0:M, 0:N] = toep[0:M, 0:N]
+    circ[0:M, N+1:2*N] = toep[0:M, -1:0:-1]
+    circ[M+1:2*M, 0:N] = toep[-1:0:-1, 0:N]
+    circ[M+1:2*M, N+1:2*N] = toep[-1:0:-1, -1:0:-1]
+
+    opCirc = np.fft.fftn(circ)
+    return opCirc
