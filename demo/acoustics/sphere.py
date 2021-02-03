@@ -21,7 +21,7 @@ from vines.operators.acoustic_operators import volume_potential
 from vines.precondition.threeD import circulant_embed_fftw
 from vines.operators.acoustic_matvecs import mvp_vec_fftw, mvp_domain, mvp_potential_x_perm
 from scipy.sparse.linalg import LinearOperator, gmres, bicgstab
-from vines.mie_series_function import mie_function, mie_function_density_contrast
+from analytical.mie_series_function import mie_function, mie_function_density_contrast
 from matplotlib import pyplot as plt
 import matplotlib
 from mpl_toolkits.mplot3d import Axes3D 

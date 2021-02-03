@@ -269,6 +269,16 @@ def shape_2d(geom, refInd, lambda_ext, radius, nPerLam):
         P[:-1, 1] = y
         P[-1, 0] = x[0]
         P[-1, 1] = y[0]
+    elif geom in 'square':
+        a = radius
+        b = np.sqrt(2)/2 * a
+        dom_x = 2 * b
+        dom_y = dom_x
+        theta = np.arange(0, 5) * 2*np.pi/4 + np.pi/4
+        verts = a * np.exp(1j * theta)
+        P = np.zeros((verts.shape[0], 2), dtype=np.float64)
+        P[:, 0] = verts.real
+        P[:, 1] = verts.imag
     elif geom in 'circle':
         a = radius
         dom_x = 2 * a

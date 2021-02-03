@@ -136,7 +136,7 @@ def mvp(x):
     return mvp_vec_fftw(x, circ_op, idx, Mr)
 
 
-# Linear oper
+# Linear operator
 A = LinearOperator((L*M*N, L*M*N), matvec=mvp)
 
 
@@ -177,7 +177,7 @@ xmin, xmax = r[0, 0, 0, 0], r[-1, 0, 0, 0]
 ymin, ymax = r[0, 0, 0, 1], r[0, -1, 0, 1]
 plt.imshow(np.real(U_centre.T),
            extent=[xmin*1e3, xmax*1e3, ymin*1e3, ymax*1e3],
-           cmap=plt.cm.get_cmap('viridis'), interpolation='spline16')
+           cmap=plt.cm.get_cmap('seismic'), interpolation='spline16')
 plt.xlabel(r'$x$ (mm)')
 plt.ylabel(r'$y$ (mm)')
 circle = plt.Circle((0., 0.), radius*1e3, color='black', fill=False,

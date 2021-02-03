@@ -132,7 +132,7 @@ def mvp_volume_potential(xIn, circ_op, idx, Mr):
     return xOutVec
 
 
-# Evaluate scattered field in domain - requires on MVP
+# Evaluate scattered field in domain - requires an MVP
 def mvp_potential_x_perm(xIn, circ_op, idx, Mr):
     (L, M, N) = Mr.shape
     xInRO = xIn.reshape(L, M, N, order='F')
@@ -228,6 +228,16 @@ def scattered_field(xIn, opCirc, M, N, MR):
     XFFT = np.fft.fftn(MR * xInRO, [2*M, 2*N])
     Y = np.fft.ifftn(opCirc * XFFT)
     xOut = Y[0:M, 0:N]
+    return xOut
+
+
+# Evaluate scattered field in domain - requires an MVP
+def scattered_field_3d(xIn, circ_op, Mr):
+    (L, M, N) = Mr.shape
+    xInRO = xIn.reshape(L, M, N, order='F')
+    xFFT = pyfftw.interfaces.numpy_fft.fftn(Mr * xInRO, [2 * L, 2 * M, 2 * N])
+    Y = pyfftw.interfaces.numpy_fft.ifftn(circ_op * xFFT)
+    xOut = Y[0:L, 0:M, 0:N]
     return xOut
 
 
