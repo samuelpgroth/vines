@@ -1,7 +1,6 @@
 #
-# Scattering of a plane wave by a homogeneous sphere
-# with a density contrast
-# ==================================================
+# Scattering of a plane wave by a homogeneous sphere with a density contrast
+# ==========================================================================
 #
 # This demo illustrates how to:
 #
@@ -23,7 +22,7 @@ from vines.precondition.threeD import circulant_embed_fftw, circulant_gradient_e
 from vines.operators.acoustic_matvecs import (mvp_vec_fftw, mvp_domain,
     mvp_potential_x_perm, mvp_vec_rho_fftw, mvp_potential_grad)
 from scipy.sparse.linalg import LinearOperator, gmres
-from vines.mie_series_function import mie_function_density_contrast
+from analytical.mie_series_function import mie_function_density_contrast
 from matplotlib import pyplot as plt
 import matplotlib
 import time
@@ -36,7 +35,7 @@ import time
 geom = 'sphere'
 radius = 2.5e-3
 rho0 = 1.0
-rho1 = 0.9
+rho1 = 1.0
 refInd = 1.2 + 1j * 0.0
 # * Wavelength
 lambda_ext = 1.5e-3
@@ -144,8 +143,9 @@ Utemp = mvp_potential_x_perm(sol, circ_op, idx_n,
                              Mr/RHO).reshape(L, M, N, order='F')
 Vtemp = mvp_potential_grad(sol, circ_op_grad, idx, Dr_grad, rho_ratio).reshape(L, M, N, order='F')
 # U = Uinc - Dr * J + Utemp + Vtemp
-U  = Uinc - Dr * J + rho0 * Utemp + rho0 * Vtemp
-# U = Uinc + Utemp
+# U  = Uinc - Dr * J + rho0 * Utemp + rho0 * Vtemp
+# U  = Uinc - Dr * J + rho0 * Utemp - rho0 * Vtemp
+U = Uinc + Utemp
 U_centre = U[:, :, np.int(np.round(N/2))]
 
 error = np.linalg.norm(U_centre-np.conj(P)) / np.linalg.norm(P)

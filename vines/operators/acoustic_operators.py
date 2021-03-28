@@ -144,13 +144,18 @@ def grad_potential(ko, r):
 
     self = 0.0
 
-    nearby_quad = 'off'
+    nearby_quad = 'on'
     n_quad = 10
     xG, wG = np.polynomial.legendre.leggauss(n_quad)
     XG, YG, ZG = np.meshgrid(xG, xG, xG)
     XW, YW, ZW = np.meshgrid(wG*0.5, wG*0.5, wG*0.5)
 
-    @njit(parallel=True)
+    n_quad_s = 40
+    xG_s, wG_s = np.polynomial.legendre.leggauss(n_quad_s)
+    XG_s, YG_s, ZG_s = np.meshgrid(xG_s, xG_s, xG_s)
+    XW_s, YW_s, ZW_s = np.meshgrid(wG_s*0.5, wG_s*0.5, wG_s*0.5)
+
+    # @njit(parallel=True)
     def grad_potential_fast(ko):
         toep = np.zeros((L, M, N, 3), dtype=np.complex128)
         for i in prange(0, L):
@@ -166,6 +171,7 @@ def grad_potential(ko, r):
                             z_grid = R1[2] + dx/2 * ZG
 
                             temp = 0.0+0.0j
+                            # temp = np.zeros((3, 1), dtype=np.complex128)
                             for iQ in range(0, n_quad):
                                 for jQ in range(0, n_quad):
                                     for kQ in range(0, n_quad):
@@ -183,9 +189,12 @@ def grad_potential(ko, r):
                                             (1j * ko * rjk - 1) / \
                                             (4 * np.pi * rjk**3) * dx**3 * \
                                             rk_to_rj
+                                        
+                                        # print(Ajk.shape)
 
                                         temp += Ajk * XW[iQ, jQ, kQ] * \
                                             YW[iQ, jQ, kQ] * ZW[iQ, jQ, kQ]
+                                        # print(temp.shape)
                             toep[i, j, k, :] = temp
                         else:
                             if np.abs(rjk) > 1e-15:
@@ -196,13 +205,45 @@ def grad_potential(ko, r):
                                             (4 * np.pi * rjk**3) * dx**3 * \
                                             rk_to_rj
                             else:
-                                toep[i, j, k, :] = self
+                                x_grid = R1[0] + dx/2 * XG_s
+                                y_grid = R1[1] + dx/2 * YG_s
+                                z_grid = R1[2] + dx/2 * ZG_s
+
+                                temp = 0.0+0.0j
+                                # temp = np.zeros((3, 1), dtype=np.complex128)
+                                for iQ in range(0, n_quad_s):
+                                    for jQ in range(0, n_quad_s):
+                                        for kQ in range(0, n_quad_s):
+                                            RQ = np.array([x_grid[iQ, jQ, kQ],
+                                                        y_grid[iQ, jQ, kQ],
+                                                        z_grid[iQ, jQ, kQ]])
+
+                                            rk_to_rj = RQ - R0
+                                            rjk = np.linalg.norm(rk_to_rj)
+
+                                            # Ajk = np.exp(1j * ko * rjk) / \
+                                            #     (4 * np.pi * rjk) * dx**3
+
+                                            Ajk = np.exp(1j * ko * rjk) * \
+                                                (1j * ko * rjk - 1) / \
+                                                (4 * np.pi * rjk**3) * dx**3 * \
+                                                rk_to_rj
+                                            
+                                            # print(Ajk.shape)
+
+                                            temp += Ajk * XW_s[iQ, jQ, kQ] * \
+                                                YW_s[iQ, jQ, kQ] * ZW_s[iQ, jQ, kQ]
+                                            # print(temp.shape)
+                                toep[i, j, k, :] = temp
+                                # toep[i, j, k, :] = self
+                                print('bug')
                     else:
                         if np.abs(rjk) > 1e-15:
                             toep[i, j, k, :] = np.exp(1j * ko * rjk) * \
                                             (1j * ko * rjk - 1) / \
                                             (4 * np.pi * rjk**3) * dx**3 * \
                                             rk_to_rj
+                            print(rk_to_rj.shape)
                         else:
                             toep[i, j, k, :] = self
         return toep

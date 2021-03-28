@@ -152,7 +152,7 @@ def mvp_potential_x_perm(xIn, circ_op, idx, Mr):
 
 
 # Evaluate portion of scattered field from gradient of potential
-# operator in domain (for density contrast problems) - requires on MVP
+# operator in domain (for density contrast problems) - requires an MVP
 def mvp_potential_grad(xIn, circ_op_grad, idx, Dr_grad, rho_ratio):
     ''' Matrix-vector product with FFTW'''
     (_, L, M, N) = Dr_grad.shape
