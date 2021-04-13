@@ -132,6 +132,9 @@ def shape_size_param(geom, refInd, sizeParam, nPerLam, aspectRatio):
         P = np.zeros((verts.shape[0], 2), dtype=np.float64)
         P[:, 0] = verts.real
         P[:, 1] = verts.imag
+    # elif geom in 'tri':
+    #     a = 1
+    #     theta = np.arange(0, 4) * 2 * np.pi/6
     elif geom in 'koch':
         a = 1
         x, y, _ = koch_snowflake(order=5, scale=a)
