@@ -14,10 +14,13 @@ The particular scattering scenarios considered in this suite are the following:
 ## Dependencies
 These Python libraries are required to run VINES:
 * numba
+* scipy
 * pyfftw
 * numpy
 * pickle-mixin
 * matplotlib
+
+For the notebook examples, a working LaTeX installation is required to produce the plots.
 
 ## To do list
 * Complete transducer_nonlinear_scatter.py 
