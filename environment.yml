@@ -113,4 +113,3 @@ dependencies:
     - pickle-mixin==1.0.2
     - shutilwhich==1.1.0
     - tempdir==0.7.1
-prefix: /home/andrew/anaconda3/envs/vines
